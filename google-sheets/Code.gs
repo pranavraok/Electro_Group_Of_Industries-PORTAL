@@ -6,12 +6,22 @@
 
 const HEADERS = ["id", "swg", "thickness", "ohm", "minw", "maxw"];
 const ALLOWED_TABLES = ["nichrome_wires", "kanthal_d_wires"];
+const REPORT_SHEET = "calibration_reports";
+const REPORT_HEADERS = [
+  "id", "report_no", "page_no", "cal_on", "cal_due", "customer_name",
+  "device", "serial_no", "equipment", "location", "status", "payload_json", "updated_at"
+];
 const SPREADSHEET_ID = "1fuzplqthrPBaIbyuaGIOg_n1Z8XnSSdimjJjArl76So";
 const ADMIN_PASSWORD = "CHANGE_THIS_TO_YOUR_PASSWORD";
 
 function doGet(event) {
   try {
     const action = String((event.parameter && event.parameter.action) || "");
+
+    if (action === "listReports") {
+      return json_({ ok: true, data: listReports_() });
+    }
+
     if (action !== "read") throw new Error("Unsupported request.");
 
     const table = validateTable_(event.parameter.table);
@@ -38,10 +48,93 @@ function doPost(event) {
       return json_({ ok: true, saved: rows.length });
     }
 
+    if (body.action === "saveReport") {
+      const report = validateReport_(body.report);
+      saveReport_(report);
+      return json_({ ok: true, id: report.id, reportNo: report.reportNo });
+    }
+
     throw new Error("Unsupported request.");
   } catch (error) {
     return json_({ ok: false, error: error.message });
   }
+}
+
+function getReportSheet_() {
+  const spreadsheet = getSpreadsheet_();
+  let sheet = spreadsheet.getSheetByName(REPORT_SHEET);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(REPORT_SHEET);
+    sheet.getRange(1, 1, 1, REPORT_HEADERS.length).setValues([REPORT_HEADERS]);
+    formatReportSheet_(sheet);
+  }
+  return sheet;
+}
+
+function listReports_() {
+  const sheet = getReportSheet_();
+  if (sheet.getLastRow() < 2) return [];
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, REPORT_HEADERS.length).getValues()
+    .filter(function (row) { return row[0] !== ""; })
+    .map(function (row) {
+      try { return JSON.parse(String(row[11] || "{}")); }
+      catch (_error) { return null; }
+    })
+    .filter(function (report) { return report && report.id; })
+    .sort(function (a, b) { return String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")); });
+}
+
+function saveReport_(report) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = getReportSheet_();
+    const lastRow = sheet.getLastRow();
+    let targetRow = lastRow + 1;
+    if (lastRow >= 2) {
+      const ids = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+      for (let index = 0; index < ids.length; index++) {
+        if (String(ids[index][0]) === report.id) {
+          targetRow = index + 2;
+          break;
+        }
+      }
+    }
+    const values = [[
+      report.id, report.reportNo, report.pageNo, report.calOn, report.calDue,
+      report.customerName, report.device, report.serialNo, report.equipment,
+      report.location, report.status, JSON.stringify(report), report.updatedAt
+    ]];
+    sheet.getRange(targetRow, 1, 1, REPORT_HEADERS.length).setValues(values);
+    formatReportSheet_(sheet);
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function validateReport_(source) {
+  if (!source || typeof source !== "object") throw new Error("Calibration report is missing.");
+  const report = JSON.parse(JSON.stringify(source));
+  ["id", "reportNo", "pageNo", "calOn", "calDue", "customerName"].forEach(function (field) {
+    if (!String(report[field] || "").trim()) throw new Error("Missing report field: " + field);
+  });
+  if (!Array.isArray(report.readings) || report.readings.length === 0 || report.readings.length > 50) {
+    throw new Error("Calibration readings are missing or invalid.");
+  }
+  if (JSON.stringify(report).length > 45000) throw new Error("Calibration report is too large.");
+  return report;
+}
+
+function formatReportSheet_(sheet) {
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, REPORT_HEADERS.length)
+    .setFontWeight("bold")
+    .setBackground("#0f766e")
+    .setFontColor("#ffffff");
+  sheet.getRange("D:E").setNumberFormat("yyyy-mm-dd");
+  sheet.autoResizeColumns(1, REPORT_HEADERS.length);
+  sheet.setColumnWidth(12, 420);
 }
 
 function readTable_(tableName) {

@@ -10,8 +10,13 @@ let currentScreen = "material";
 let currentHistoryIndex = 0;
 let loadedTable = null;
 let adminPassword = "";
+let calibrationReports = [];
+let editingReportId = null;
 
 const APP_HISTORY_KEY = "heater-coil-calculator";
+const REPORT_STORAGE_KEY = "electrotech-calibration-reports-v1";
+const REPORT_SEQUENCE_KEY = "electro-group-calibration-sequence-v1";
+const HEATER_CALCULATION_COUNT_KEY = "electro-group-heater-calculation-count-v1";
 
 /* Available standard core diameters (mm) – sorted ascending */
 const STANDARD_CORE_SIZES = [
@@ -57,9 +62,12 @@ const PIPE_INVENTORY = [
 ========================================================= */
 
 const materialSelect = document.getElementById("materialSelect");
+const dashboard = document.getElementById("dashboard");
 const landing = document.getElementById("landing");
 const calculator = document.getElementById("calculator");
 const dbEditor = document.getElementById("dbEditor");
+const reportBuilder = document.getElementById("reportBuilder");
+const recordsView = document.getElementById("recordsView");
 const passwordModal = document.getElementById("passwordModal");
 const saveModal = document.getElementById("saveModal");
 const result = document.getElementById("result");
@@ -104,7 +112,7 @@ async function sheetsApiRequest(action, payload = {}) {
     );
   }
 
-  const isRead = action === "read";
+  const isRead = action === "read" || action === "listReports";
   const options = isRead
     ? { method: "GET", redirect: "follow", cache: "no-store" }
     : {
@@ -114,7 +122,7 @@ async function sheetsApiRequest(action, payload = {}) {
         body: JSON.stringify({ action, ...payload })
       };
   const url = isRead
-    ? `${GOOGLE_SHEETS_WEB_APP_URL}?action=read&table=${encodeURIComponent(payload.table)}&t=${Date.now()}`
+    ? `${GOOGLE_SHEETS_WEB_APP_URL}?action=${encodeURIComponent(action)}${payload.table ? `&table=${encodeURIComponent(payload.table)}` : ""}&t=${Date.now()}`
     : GOOGLE_SHEETS_WEB_APP_URL;
 
   const response = await fetch(url, options);
@@ -163,14 +171,69 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
 
   passwordModal.classList.add("hidden");
   saveModal.classList.add("hidden");
+  dashboard.classList.add("hidden");
   materialSelect.classList.add("hidden");
   landing.classList.add("hidden");
   calculator.classList.add("hidden");
   dbEditor.classList.add("hidden");
+  reportBuilder.classList.add("hidden");
+  recordsView.classList.add("hidden");
 
-  if (screen === "material" || !material) {
+  document.querySelectorAll(".nav-btn, .nav-subbtn").forEach((button) => {
+    const target = button.dataset.screen;
+    const activeTarget = ["landing", "calculator", "database"].includes(screen) ? "material" : screen;
+    button.classList.toggle("active", target === activeTarget);
+  });
+  const calibrationGroup = document.querySelector('[data-nav-group="calibration"]');
+  const calibrationActive = ["reports", "records"].includes(screen);
+  calibrationGroup.classList.toggle("active", calibrationActive);
+  if (calibrationActive) calibrationGroup.classList.add("open");
+  else calibrationGroup.classList.remove("open");
+
+  const titleMap = {
+    dashboard: "Operations & Automation",
+    material: "Heater Coil Calculator",
+    landing: "Heater Coil Calculator",
+    calculator: "Heater Coil Calculator",
+    database: "Wire Database",
+    reports: "Calibration Report Builder",
+    records: "Calibration Report Records"
+  };
+  const pageTitle = document.getElementById("pageTitle");
+  if (pageTitle) pageTitle.textContent = titleMap[screen] || "Operations & Automation";
+
+  if (screen === "dashboard") {
+    dashboard.classList.remove("hidden");
+    loadLocalReports();
+    refreshDashboardMetrics();
+    syncReportsFromSheet();
+    return;
+  }
+
+  if (screen === "reports") {
+    reportBuilder.classList.remove("hidden");
+    if (!options.keepDraft && !editingReportId) ensureReportDefaults();
+    renderCalibrationPreview();
+    return;
+  }
+
+  if (screen === "records") {
+    recordsView.classList.remove("hidden");
+    loadLocalReports();
+    renderReportRecords();
+    syncReportsFromSheet();
+    return;
+  }
+
+  if (screen === "material") {
     activeMaterial = null;
     activeTable = null;
+    currentScreen = "material";
+    materialSelect.classList.remove("hidden");
+    return;
+  }
+
+  if (!material) {
     currentScreen = "material";
     materialSelect.classList.remove("hidden");
     return;
@@ -206,7 +269,7 @@ function saveHistoryState(screen, material = activeMaterial, replace = false) {
   const state = {
     app: APP_HISTORY_KEY,
     screen,
-    material: screen === "material" ? null : material,
+    material: ["material", "dashboard", "reports", "records"].includes(screen) ? null : material,
     index: replace ? currentHistoryIndex : currentHistoryIndex + 1
   };
 
@@ -240,6 +303,36 @@ function selectMaterial(type) {
 
 function backToMaterial() {
   goBackTo("material");
+}
+
+function openDashboard() {
+  navigateTo("dashboard", null);
+}
+
+function toggleCalibrationNav() {
+  document.querySelector('[data-nav-group="calibration"]').classList.toggle("open");
+}
+
+function openHeaterModule() {
+  navigateTo("material", null);
+}
+
+async function openReportBuilder() {
+  editingReportId = null;
+  navigateTo("reports", null);
+  resetReportForm();
+  const provisionalNumber = reportField("reportNo").value;
+  await syncReportsFromSheet();
+  if (currentScreen === "reports" && !editingReportId && reportField("reportNo").value === provisionalNumber) {
+    reportField("reportNo").value = "";
+    reportField("pageNo").value = "";
+    ensureReportDefaults();
+    renderCalibrationPreview();
+  }
+}
+
+function openReportRecords() {
+  navigateTo("records", null);
 }
 
 /* =========================================================
@@ -553,9 +646,10 @@ function setupHistoryNavigation() {
 
   if (state && state.app === APP_HISTORY_KEY) {
     currentHistoryIndex = state.index || 0;
-    renderScreen(state.screen || "material", state.material);
+    renderScreen(state.screen || "dashboard", state.material);
   } else {
-    saveHistoryState("material", null, true);
+    saveHistoryState("dashboard", null, true);
+    renderScreen("dashboard", null);
   }
 
   window.addEventListener("popstate", (event) => {
@@ -563,12 +657,12 @@ function setupHistoryNavigation() {
 
     if (!nextState || nextState.app !== APP_HISTORY_KEY) {
       currentHistoryIndex = 0;
-      renderScreen("material");
+      renderScreen("dashboard");
       return;
     }
 
     currentHistoryIndex = nextState.index || 0;
-    renderScreen(nextState.screen || "material", nextState.material);
+    renderScreen(nextState.screen || "dashboard", nextState.material);
   });
 }
 
@@ -837,6 +931,8 @@ function calculate() {
   const displayPipeID        = displayPipeOD - 2 * displayPipeThickness;
   const displayCoreOD        = (isCoreODAuto && primaryResult) ? primaryResult.effectiveCoreOD : coreOD;
 
+  incrementHeaterCalculationCount();
+
   result.innerHTML = `
     <div class="result-stack">
       <div class="result-grid">
@@ -1063,3 +1159,371 @@ function showSaveModal(title, message) {
 function closeSaveModal() {
   document.getElementById("saveModal").classList.add("hidden");
 }
+
+/* =========================================================
+   CALIBRATION REPORT AUTOMATION
+========================================================= */
+
+function reportField(name) {
+  return document.querySelector(`[data-report-field="${name}"]`);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function toInputDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatReportDate(value) {
+  if (!value) return "—";
+  const [year, month, day] = String(value).split("-");
+  return year && month && day ? `${day}-${month}-${year}` : value;
+}
+
+function calculateDueDate(calibrationDate) {
+  const date = calibrationDate ? new Date(`${calibrationDate}T12:00:00`) : new Date();
+  date.setFullYear(date.getFullYear() + 1);
+  date.setDate(date.getDate() - 1);
+  return toInputDate(date);
+}
+
+function getFinancialYearCode(date = new Date()) {
+  const startYear = date.getMonth() >= 3 ? date.getFullYear() : date.getFullYear() - 1;
+  return `${String(startYear).slice(-2)}-${String(startYear + 1).slice(-2)}`;
+}
+
+function loadLocalReports() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(REPORT_STORAGE_KEY) || "[]");
+    calibrationReports = Array.isArray(saved) ? saved : [];
+  } catch (_error) {
+    calibrationReports = [];
+  }
+  return calibrationReports;
+}
+
+function persistLocalReports() {
+  localStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify(calibrationReports));
+}
+
+function extractReportSequence(reportNumber) {
+  const match = String(reportNumber || "").match(/(?:ETS|EGI)\/CAL\/(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function readReportSequenceState() {
+  try {
+    const value = JSON.parse(localStorage.getItem(REPORT_SEQUENCE_KEY) || "null");
+    return value && Number.isFinite(Number(value.sequence)) ? value : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function rememberReportSequence(reportNumber, updatedAt = new Date().toISOString()) {
+  const sequence = extractReportSequence(reportNumber);
+  if (!Number.isFinite(sequence)) return;
+  localStorage.setItem(REPORT_SEQUENCE_KEY, JSON.stringify({ sequence, updatedAt }));
+}
+
+async function syncReportsFromSheet() {
+  try {
+    const response = await sheetsApiRequest("listReports");
+    if (!Array.isArray(response.data)) return;
+    const combined = new Map(calibrationReports.map((report) => [report.id, report]));
+    response.data.forEach((remoteReport) => {
+      const localReport = combined.get(remoteReport.id);
+      if (!localReport || String(remoteReport.updatedAt || "") > String(localReport.updatedAt || "")) {
+        combined.set(remoteReport.id, remoteReport);
+      }
+    });
+    calibrationReports = Array.from(combined.values()).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    persistLocalReports();
+    const newestReport = calibrationReports[0];
+    const sequenceState = readReportSequenceState();
+    if (newestReport && (!sequenceState || String(newestReport.updatedAt || "") > String(sequenceState.updatedAt || ""))) {
+      rememberReportSequence(newestReport.reportNo, newestReport.updatedAt);
+    }
+    if (currentScreen === "records") renderReportRecords();
+    if (currentScreen === "dashboard") refreshDashboardMetrics();
+  } catch (error) {
+    console.info("Shared report register is waiting for the updated Apps Script deployment.");
+  }
+}
+
+function nextReportSequence() {
+  loadLocalReports();
+  const sequenceState = readReportSequenceState();
+  if (sequenceState) return Number(sequenceState.sequence) + 1;
+  const newestSequence = calibrationReports.length ? extractReportSequence(calibrationReports[0].reportNo) : null;
+  if (Number.isFinite(newestSequence)) return newestSequence + 1;
+  const highest = calibrationReports.reduce((max, report) => Math.max(max, extractReportSequence(report.reportNo) || 0), 0);
+  return highest + 1;
+}
+
+function getHeaterCalculationCount() {
+  return Number(localStorage.getItem(HEATER_CALCULATION_COUNT_KEY) || 0);
+}
+
+function incrementHeaterCalculationCount() {
+  localStorage.setItem(HEATER_CALCULATION_COUNT_KEY, String(getHeaterCalculationCount() + 1));
+}
+
+function refreshDashboardMetrics() {
+  const total = calibrationReports.length;
+  const passed = calibrationReports.filter((report) => report.status === "Pass").length;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  const dueSoon = calibrationReports.filter((report) => {
+    if (!report.calDue) return false;
+    const due = new Date(`${report.calDue}T00:00:00`);
+    const difference = due.getTime() - today.getTime();
+    return difference >= 0 && difference <= thirtyDays;
+  }).length;
+
+  document.getElementById("dashboardTotalReports").textContent = total;
+  document.getElementById("dashboardPassedReports").textContent = passed;
+  document.getElementById("dashboardDueSoon").textContent = dueSoon;
+  document.getElementById("dashboardHeaterRuns").textContent = getHeaterCalculationCount();
+
+  const recentList = document.getElementById("dashboardRecentReports");
+  const recent = calibrationReports.slice(0, 5);
+  recentList.innerHTML = recent.length
+    ? recent.map((report) => `<button class="recent-report" onclick="editCalibrationReport('${escapeHtml(report.id)}')"><span><strong>${escapeHtml(report.reportNo)}</strong><small>${escapeHtml(report.customerName || "No customer")}</small></span><span><small>${formatReportDate(report.calOn)}</small><b class="status-dot ${report.status === "Pass" ? "pass" : "review"}"></b></span></button>`).join("")
+    : `<div class="dashboard-empty">No calibration reports yet.</div>`;
+}
+
+function ensureReportDefaults() {
+  if (!document.getElementById("calibrationForm")) return;
+  const today = new Date();
+  const sequence = String(nextReportSequence()).padStart(3, "0");
+  if (!reportField("calOn").value) reportField("calOn").value = toInputDate(today);
+  if (!reportField("calDue").value) reportField("calDue").value = calculateDueDate(reportField("calOn").value);
+  if (!reportField("reportNo").value) reportField("reportNo").value = `EGI/CAL/${sequence}/${getFinancialYearCode(today)}`;
+  if (!reportField("pageNo").value) reportField("pageNo").value = sequence;
+  if (!document.querySelector("#readingsBody tr")) {
+    [0, 50, 100, 175, 250, 400].forEach((standard, index) => addReadingRow({ standard, duc: [0, 50, 100, 176, 249, 400][index] }, false));
+  }
+}
+
+function addReadingRow(reading = {}, shouldRender = true) {
+  const body = document.getElementById("readingsBody");
+  if (!body) return;
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td class="reading-number"></td>
+    <td><input type="number" step="0.01" data-reading-field="standard" value="${escapeHtml(reading.standard ?? "")}"></td>
+    <td><input type="number" step="0.01" data-reading-field="duc" value="${escapeHtml(reading.duc ?? "")}"></td>
+    <td class="calculated-value" data-reading-output="error">0</td>
+    <td class="calculated-value pass" data-reading-output="remark">Pass</td>
+    <td><button type="button" class="remove-reading" aria-label="Remove reading" onclick="removeReadingRow(this)">×</button></td>`;
+  body.appendChild(row);
+  renumberReadingRows();
+  if (shouldRender) renderCalibrationPreview();
+}
+
+function removeReadingRow(button) {
+  const body = document.getElementById("readingsBody");
+  if (body.rows.length <= 1) return;
+  button.closest("tr").remove();
+  renumberReadingRows();
+  renderCalibrationPreview();
+}
+
+function renumberReadingRows() {
+  document.querySelectorAll("#readingsBody tr").forEach((row, index) => {
+    row.querySelector(".reading-number").textContent = `${index + 1}.`;
+  });
+}
+
+function getReadingRows() {
+  const tolerance = Math.abs(Number(reportField("claimedError")?.value) || 0);
+  return Array.from(document.querySelectorAll("#readingsBody tr")).map((row, index) => {
+    const standardValue = row.querySelector('[data-reading-field="standard"]').value;
+    const ducValue = row.querySelector('[data-reading-field="duc"]').value;
+    const standard = Number(standardValue);
+    const duc = Number(ducValue);
+    const complete = standardValue !== "" && ducValue !== "";
+    const error = complete ? duc - standard : 0;
+    const allowedError = Math.abs(standard) * tolerance / 100;
+    const pass = complete && Math.abs(error) <= allowedError + 0.000001;
+    const errorOutput = row.querySelector('[data-reading-output="error"]');
+    const remarkOutput = row.querySelector('[data-reading-output="remark"]');
+    errorOutput.textContent = complete ? Number(error.toFixed(2)).toString() : "—";
+    remarkOutput.textContent = complete ? (pass ? "Pass" : "Fail") : "—";
+    remarkOutput.classList.toggle("pass", pass);
+    remarkOutput.classList.toggle("fail", complete && !pass);
+    return { index: index + 1, standard: complete ? standard : "", duc: complete ? duc : "", error: complete ? Number(error.toFixed(2)) : "", remark: complete ? (pass ? "Pass" : "Fail") : "" };
+  });
+}
+
+function collectReportData() {
+  const report = {};
+  document.querySelectorAll("[data-report-field]").forEach((field) => {
+    report[field.dataset.reportField] = field.value.trim();
+  });
+  report.readings = getReadingRows();
+  report.status = report.readings.length && report.readings.every((reading) => reading.remark === "Pass") ? "Pass" : "Review";
+  report.id = editingReportId || `CAL-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  report.updatedAt = new Date().toISOString();
+  return report;
+}
+
+function renderCalibrationPreview() {
+  const preview = document.getElementById("calibrationPreview");
+  if (!preview) return;
+  const data = collectReportData();
+  const address = escapeHtml(data.customerAddress || "Customer address").replaceAll("\n", "<br>");
+  const readings = data.readings.length ? data.readings : [{ index: 1, standard: "", duc: "", error: "", remark: "" }];
+  preview.innerHTML = `
+    <div class="certificate-brand"><img class="certificate-service-logo" src="assets/electrotech-services-logo.png" alt="Electrotech Services"></div>
+    <div class="certificate-title">CALIBRATION REPORT</div>
+    <div class="certificate-customer"><strong>CUSTOMER'S NAME &amp; ADDRESS</strong><div class="certificate-address">${escapeHtml(data.customerName || "M/s. Customer name")}<br>${address}</div></div>
+    <table class="certificate-control"><thead><tr><th>CAL. REPORT NO.</th><th>CAL. ON</th><th>CAL. DUE</th><th>PAGE NO.</th></tr></thead><tbody><tr><td>${escapeHtml(data.reportNo)}</td><td>${formatReportDate(data.calOn)}</td><td>${formatReportDate(data.calDue)}</td><td>${escapeHtml(data.pageNo)}</td></tr></tbody></table>
+    <div class="certificate-equipment">
+      <div class="line"><span><b>Device:</b> ${escapeHtml(data.device || "—")}</span><span><b>Make:</b> ${escapeHtml(data.make || "—")}</span><span><b>Sl No:</b> ${escapeHtml(data.serialNo || "—")}</span></div>
+      <div class="line"><span><b>Equipment:</b> ${escapeHtml(data.equipment || "—")}</span><span><b>Location:</b> ${escapeHtml(data.location || "—")}</span><span></span></div>
+      <div class="line"><span><b>Environment Condition:</b> ${escapeHtml(data.environment || "—")}</span><span><b>Room Temp.:</b> ± ${escapeHtml(data.roomTemp || "—")}°C</span><span><b>Humidity:</b> ${escapeHtml(data.humidity || "—")}</span></div>
+    </div>
+    <table class="certificate-readings"><thead><tr><th>Sl.<br>No</th><th>Parameter / Range<br>Temp/Ambt.</th><th>STD<br>Input</th><th>DUC<br>Reading</th><th>DUC error<br>claimed</th><th>DUC error<br>observed</th><th>Remarks</th></tr></thead><tbody>${readings.map((reading, index) => `<tr><td>${reading.index}.</td><td>${index === 0 ? `${escapeHtml(data.parameter || "—")}<br>(${escapeHtml(data.range || "—")})` : ""}</td><td>${reading.standard === "" ? "—" : escapeHtml(reading.standard) + "°C"}</td><td>${reading.duc === "" ? "—" : escapeHtml(reading.duc) + "°C"}</td><td>±${escapeHtml(data.claimedError || "0")}%</td><td>${reading.error === "" ? "—" : escapeHtml(reading.error)}</td><td>${escapeHtml(reading.remark || "—")}</td></tr>`).join("")}</tbody></table>
+    <div class="certificate-standard"><strong>PRIMARY STANDARD USED :</strong><div class="standard-details"><span>${escapeHtml(data.standardName || "—")}</span><span>Make: ${escapeHtml(data.standardMake || "—")} &nbsp;&nbsp; SL.NO: ${escapeHtml(data.standardSerial || "—")}</span><span>Report No. ${escapeHtml(data.standardReportNo || "—")}</span><span>Cal. Validity: ${formatReportDate(data.standardValidity)}</span></div></div>
+    <div class="certificate-notes"><div class="certificate-note"><b>TRACEABLE TO</b><span>:</span><span>${escapeHtml(data.traceableTo || "—")}</span></div><div class="certificate-note"><b>METHOD</b><span>:</span><span>${escapeHtml(data.method || "—")}</span></div><div class="certificate-note"><b>CONDITION</b><span>:</span><span>${escapeHtml(data.condition || "—")}</span></div></div>
+    <div class="certificate-signatures"><div class="signature-block"><strong>CALIBRATED BY</strong><div><div class="signature-name">${escapeHtml(data.calibratedBy || "—")}</div><div class="signature-role">(Calibration Engineer)</div></div></div><div class="signature-block"><strong>CHECKED BY</strong><div><div class="signature-name">${escapeHtml(data.checkedBy || "—")}</div><div class="signature-role">(Sr. Calibration Engineer)</div></div></div><div class="signature-block"><strong>For ELECTRO GROUP OF INDUSTRIES</strong><div><div class="signature-name">[${escapeHtml(data.authorisedBy || "—")}]</div></div></div></div>`;
+}
+
+function resetReportForm() {
+  editingReportId = null;
+  const form = document.getElementById("calibrationForm");
+  form.reset();
+  document.getElementById("readingsBody").innerHTML = "";
+  reportField("reportNo").value = "";
+  reportField("pageNo").value = "";
+  reportField("calOn").value = "";
+  reportField("calDue").value = "";
+  document.getElementById("reportFormTitle").textContent = "New calibration report";
+  ensureReportDefaults();
+  renderCalibrationPreview();
+}
+
+function validateCalibrationReport(report) {
+  if (!report.customerName || !report.reportNo || !report.calOn || !report.calDue) return "Complete the report number, dates and customer name.";
+  if (!report.readings.length || report.readings.some((reading) => reading.standard === "" || reading.duc === "")) return "Complete all calibration reading rows.";
+  return "";
+}
+
+async function saveCalibrationReport() {
+  const report = collectReportData();
+  const validationError = validateCalibrationReport(report);
+  if (validationError) {
+    showSaveModal("Check report", validationError);
+    return;
+  }
+
+  loadLocalReports();
+  const existingIndex = calibrationReports.findIndex((item) => item.id === report.id);
+  const reportNumberChanged = existingIndex >= 0 && calibrationReports[existingIndex].reportNo !== report.reportNo;
+  if (existingIndex >= 0) calibrationReports[existingIndex] = report;
+  else calibrationReports.unshift(report);
+  if (existingIndex < 0 || reportNumberChanged) rememberReportSequence(report.reportNo, report.updatedAt);
+  persistLocalReports();
+  editingReportId = report.id;
+  document.getElementById("reportFormTitle").textContent = `Edit ${report.reportNo}`;
+
+  try {
+    await sheetsApiRequest("saveReport", { report });
+    showSaveModal("Report saved", `${report.reportNo} is stored in the report register and Google Sheet.`);
+  } catch (error) {
+    console.warn(error);
+    showSaveModal("Report saved locally", `${report.reportNo} is available in this browser. Deploy the updated Google Apps Script to also sync it to the shared spreadsheet.`);
+  }
+}
+
+function setReportFormData(report) {
+  editingReportId = report.id;
+  document.querySelectorAll("[data-report-field]").forEach((field) => {
+    const value = report[field.dataset.reportField];
+    if (value !== undefined) field.value = value;
+  });
+  const body = document.getElementById("readingsBody");
+  body.innerHTML = "";
+  (report.readings || []).forEach((reading) => addReadingRow(reading, false));
+  document.getElementById("reportFormTitle").textContent = `Edit ${report.reportNo}`;
+  renderCalibrationPreview();
+}
+
+function editCalibrationReport(id) {
+  loadLocalReports();
+  const report = calibrationReports.find((item) => item.id === id);
+  if (!report) return;
+  navigateTo("reports", null, { keepDraft: true });
+  setReportFormData(report);
+}
+
+function renderReportRecords() {
+  const table = document.getElementById("recordsTable");
+  const search = (document.getElementById("recordsSearch")?.value || "").toLowerCase().trim();
+  const filtered = calibrationReports.filter((report) => [report.reportNo, report.customerName, report.device, report.serialNo, report.equipment].join(" ").toLowerCase().includes(search));
+  document.getElementById("recordCount").textContent = `${filtered.length} report${filtered.length === 1 ? "" : "s"}`;
+  table.innerHTML = `<thead><tr><th>Report no.</th><th>Customer</th><th>Calibration on</th><th>Device / serial</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>${filtered.length ? filtered.map((report) => `<tr><td>${escapeHtml(report.reportNo)}</td><td>${escapeHtml(report.customerName)}</td><td>${formatReportDate(report.calOn)}</td><td>${escapeHtml(report.device || "—")}<br><small>${escapeHtml(report.serialNo || "")}</small></td><td><span class="status-pill ${report.status === "Pass" ? "status-pill--ok" : "status-pill--warn"}">${escapeHtml(report.status || "Review")}</span></td><td>${new Date(report.updatedAt).toLocaleDateString()}</td><td><div class="record-actions"><button onclick="editCalibrationReport('${escapeHtml(report.id)}')">View / edit</button></div></td></tr>`).join("") : `<tr><td colspan="7" class="empty-state">No saved reports yet. Create the first calibration report to start the register.</td></tr>`}</tbody>`;
+}
+
+function csvCell(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
+function exportReportsCsv() {
+  loadLocalReports();
+  if (!calibrationReports.length) {
+    showSaveModal("Nothing to export", "Create and save at least one calibration report first.");
+    return;
+  }
+  const maxReadings = Math.max(...calibrationReports.map((report) => (report.readings || []).length));
+  const baseHeaders = ["Report No", "Page No", "Calibration On", "Calibration Due", "Customer", "Address", "Device", "Make", "Serial No", "Equipment", "Location", "Environment", "Room Temp C", "Humidity", "Parameter", "Range", "Claimed Error %", "Primary Standard", "Standard Make", "Standard Serial", "Standard Report No", "Standard Validity", "Traceable To", "Method", "Condition", "Calibrated By", "Checked By", "Authorised By", "Status", "Updated At"];
+  const readingHeaders = Array.from({ length: maxReadings }, (_, index) => [`Reading ${index + 1} STD`, `Reading ${index + 1} DUC`, `Reading ${index + 1} Error`, `Reading ${index + 1} Remark`]).flat();
+  const lines = [[...baseHeaders, ...readingHeaders].map(csvCell).join(",")];
+  calibrationReports.forEach((report) => {
+    const base = [report.reportNo, report.pageNo, report.calOn, report.calDue, report.customerName, report.customerAddress, report.device, report.make, report.serialNo, report.equipment, report.location, report.environment, report.roomTemp, report.humidity, report.parameter, report.range, report.claimedError, report.standardName, report.standardMake, report.standardSerial, report.standardReportNo, report.standardValidity, report.traceableTo, report.method, report.condition, report.calibratedBy, report.checkedBy, report.authorisedBy, report.status, report.updatedAt];
+    const readings = Array.from({ length: maxReadings }, (_, index) => {
+      const reading = (report.readings || [])[index] || {};
+      return [reading.standard, reading.duc, reading.error, reading.remark];
+    }).flat();
+    lines.push([...base, ...readings].map(csvCell).join(","));
+  });
+  const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Electro_Group_Calibration_Reports_${toInputDate(new Date())}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function printCalibrationReport() {
+  renderCalibrationPreview();
+  window.print();
+}
+
+function setupCalibrationAutomation() {
+  loadLocalReports();
+  ensureReportDefaults();
+  const form = document.getElementById("calibrationForm");
+  form.addEventListener("input", (event) => {
+    if (event.target === reportField("calOn")) reportField("calDue").value = calculateDueDate(event.target.value);
+    if (event.target === reportField("reportNo")) rememberReportSequence(event.target.value);
+    renderCalibrationPreview();
+  });
+  document.getElementById("recordsSearch").addEventListener("input", renderReportRecords);
+  renderCalibrationPreview();
+}
+
+setupCalibrationAutomation();

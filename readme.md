@@ -1,6 +1,6 @@
-# Industrial Heater Coil Calculator
+# Electro Group of Industries — Operations & Automation
 
-A browser-based Nichrome and Kanthal D heater-coil calculator for ELECTRO GROUP OF INDUSTRIES. Wire-gauge data is stored in Google Sheets and can be edited through the app's admin-protected database editor.
+A browser-based engineering and calibration workflow for ELECTRO GROUP OF INDUSTRIES. It combines the existing heater-coil calculator with a pre-built calibration report, editable live preview, report register, and spreadsheet export.
 
 ## Features
 
@@ -10,6 +10,14 @@ A browser-based Nichrome and Kanthal D heater-coil calculator for ELECTRO GROUP 
 - Admin password validation on the Google Apps Script backend
 - Automatic pipe, insulation, core, pitch, and SWG selection
 - Responsive desktop and mobile interface
+- Calibration report auto-numbering and due-date calculation
+- Report numbering continues from the last saved or manually entered sequence
+- Automatic observed-error and pass/fail results
+- Editable bordered report template based on the supplied certificate
+- Browser report register with Google Sheets synchronization
+- Excel-compatible CSV export containing report details and all readings
+- Live overview metrics for reports, passing records, due dates, and heater calculations
+- Electro Group red-and-white logo branding and favicon
 
 ## Run the app
 
@@ -37,3 +45,5 @@ Both wire tabs use the same columns:
 |---:|---:|---:|---:|---:|---:|
 
 Do not rename the tabs or column headers. The webpage editor updates complete rows and the backend validates all numeric values before saving.
+
+Calibration reports are stored in a third tab named `calibration_reports`. The backend creates this tab automatically the first time a report is saved or the shared report list is opened. Until the updated Apps Script is deployed, the website keeps reports safely in that browser and still allows Excel-compatible export.

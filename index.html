@@ -1,159 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Industrial Heater Coil Calculator</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electro Group of Industries — Operations & Automation</title>
+  <link rel="icon" type="image/png" href="assets/electro-group-logo.png">
+  <link rel="apple-touch-icon" href="assets/electro-group-logo.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="portal-shell">
+    <aside class="sidebar">
+      <div class="brand"><img class="brand-logo" src="assets/electro-group-logo.png" alt="Electro Group of Industries logo"><div><strong>Electro Group</strong><small>of Industries</small></div></div>
+      <nav class="portal-nav" aria-label="Main navigation">
+        <button class="nav-btn active" data-screen="dashboard" onclick="openDashboard()"><span>01</span>Overview</button>
+        <button class="nav-btn" data-screen="material" onclick="openHeaterModule()"><span>02</span>Heater calculator</button>
+        <div class="nav-group" data-nav-group="calibration">
+          <button class="nav-btn nav-group-toggle" type="button" onclick="toggleCalibrationNav()"><span>03</span>Calibration <b aria-hidden="true">⌄</b></button>
+          <div class="nav-submenu">
+            <button class="nav-subbtn" data-screen="reports" onclick="openReportBuilder()">New report</button>
+            <button class="nav-subbtn" data-screen="records" onclick="openReportRecords()">Records</button>
+          </div>
+        </div>
+      </nav>
+      <div class="sidebar-note"><strong>Electro Group</strong><span>Engineering operations</span></div>
+    </aside>
 
-<main class="app-shell">
+    <div class="portal-main">
+      <header class="topbar">
+        <div><p class="eyebrow">ELECTRO GROUP OF INDUSTRIES</p><h1 id="pageTitle">Operations & Automation</h1></div>
+        <div class="topbar-actions"><span class="system-status"><i></i>System ready</span></div>
+      </header>
 
-<header class="app-header">
-  <h1>Industrial Heater Coil Calculator</h1>
-  <p class="subtitle">ELECTRO GROUP OF INDUSTRIES</p>
-</header>
+      <main class="workspace">
+        <section id="dashboard" class="app-view">
+          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div><button class="primary-action" onclick="openReportBuilder()">New calibration report</button></div>
+          <div class="metric-grid">
+            <article class="metric-card"><span>Total reports</span><strong id="dashboardTotalReports">0</strong><small>Calibration records</small></article>
+            <article class="metric-card"><span>Passed</span><strong id="dashboardPassedReports">0</strong><small>Reports within limit</small></article>
+            <article class="metric-card"><span>Due soon</span><strong id="dashboardDueSoon">0</strong><small>Next 30 days</small></article>
+            <article class="metric-card"><span>Heater runs</span><strong id="dashboardHeaterRuns">0</strong><small>Completed calculations</small></article>
+          </div>
+          <div class="dashboard-grid">
+            <article class="recent-card"><div class="card-heading"><div><h3>Recent reports</h3><small>Latest calibration records</small></div><button class="text-action" onclick="openReportRecords()">View all</button></div><div id="dashboardRecentReports" class="recent-list"></div></article>
+            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true"><h3>Quick actions</h3><button onclick="openReportBuilder()">New report <span>→</span></button><button onclick="openHeaterModule()">Heater calculator <span>→</span></button><button onclick="openReportRecords()">Report records <span>→</span></button></article>
+          </div>
+        </section>
 
-<!-- MATERIAL SELECTION -->
-<div id="materialSelect" class="choice-grid app-view">
-  <button class="choice-btn" onclick="selectMaterial('nichrome')">Nichrome</button>
-  <button class="choice-btn" onclick="selectMaterial('kanthal')">Kanthal D</button>
-</div>
+        <section id="materialSelect" class="panel app-view hidden">
+          <div class="section-heading"><div><span class="section-kicker">HEATER DESIGN</span><h2>Select wire material</h2><p>The calculation database and engineering rules will load for the selected material.</p></div></div>
+          <div class="choice-grid"><button class="choice-btn" onclick="selectMaterial('nichrome')"><strong>Nichrome</strong><span>High resistance alloy</span></button><button class="choice-btn" onclick="selectMaterial('kanthal')"><strong>Kanthal D</strong><span>Iron-chromium-aluminium alloy</span></button></div>
+        </section>
 
-<!-- ACTION SELECTION -->
-<div id="landing" class="panel hidden">
+        <section id="landing" class="panel hidden">
+          <div class="material-bar"><span id="materialLabel"></span><button class="back-btn" onclick="backToMaterial()">Change material</button></div>
+          <div class="choice-grid"><button class="choice-btn" onclick="openCalculator()"><strong>Calculate winding</strong><span>Run the complete design calculation</span></button><button class="choice-btn" onclick="openPassword()"><strong>Edit wire database</strong><span>Update spreadsheet-backed gauge data</span></button></div>
+        </section>
 
-  <div class="material-bar">
-    <span id="materialLabel"></span>
-    <button class="back-btn" onclick="backToMaterial()">Back</button>
+        <section id="calculator" class="panel hidden">
+          <div class="material-bar"><span id="materialLabelCalc"></span><button class="back-btn" onclick="backToLanding()">Back</button></div>
+          <div class="section-heading compact"><div><span class="section-kicker">WINDING INPUTS</span><h2>Heater coil calculation</h2></div></div>
+          <div class="form">
+            <div class="form-field"><label>Wattage (W)</label><input id="wattage" type="number" inputmode="decimal" placeholder="Enter wattage"></div>
+            <div class="form-field"><label>Voltage (V)</label><input id="voltage" type="number" inputmode="decimal" placeholder="Enter voltage"></div>
+            <div class="form-field"><label>Heater OD (mm)</label><input id="heaterOD" type="number" inputmode="decimal" placeholder="Enter heater diameter"></div>
+            <div class="form-field"><label>Heater length (mm)</label><input id="heaterLength" type="number" inputmode="decimal" placeholder="Total heater length"></div>
+            <div class="form-field"><label>Core length (mm)</label><input id="coreLength" type="number" inputmode="decimal" placeholder="Winding length"></div>
+            <div class="form-field"><label>Pipe thickness (mm)</label><div class="field-inline"><input id="pipeThickness" type="number" inputmode="decimal" step="0.1" placeholder="Auto"><label class="switch"><input type="checkbox" id="autoThickness" checked onchange="toggleAutoThickness()"> Auto</label></div></div>
+            <div class="form-field"><label>Pipe OD (mm)</label><div class="field-inline"><input id="pipeOD" type="number" inputmode="decimal" step="0.1" placeholder="Auto"><label class="switch"><input type="checkbox" id="autoPipeOD" checked onchange="toggleAutoPipeOD()"> Auto</label></div></div>
+            <div class="form-field form-field--wide"><label>Core OD (mm)</label><div class="field-inline"><input id="coreOD" type="number" inputmode="decimal" step="0.1" placeholder="Auto"><label class="switch"><input type="checkbox" id="autoCoreOD" checked onchange="toggleAutoCoreOD()"> Auto</label></div><div id="coreODStatus" class="core-od-status"></div></div>
+            <div class="form-field"><label>Extra resistance (%)</label><input id="extra" type="number" inputmode="decimal" value="0"></div>
+          </div>
+          <button class="primary-action" onclick="calculate()">Calculate winding</button><div id="result"></div>
+        </section>
+
+        <section id="reportBuilder" class="hidden">
+          <div class="report-toolbar"><div><span class="section-kicker">CALIBRATION AUTOMATION</span><h2 id="reportFormTitle">New calibration report</h2><p>Blue fields are auto-filled. Every business value remains editable.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="resetReportForm()">New report</button><button class="ghost-btn" onclick="printCalibrationReport()">Print / PDF</button><button class="primary-action" onclick="saveCalibrationReport()">Save report</button></div></div>
+          <div class="report-workspace">
+            <form id="calibrationForm" class="report-form" onsubmit="return false">
+              <div class="form-section">
+                <div class="form-section-title"><span>01</span><div><h3>Report control</h3><p>Generated automatically, but editable when required.</p></div></div>
+                <div class="report-field-grid four"><div class="form-field auto-field"><label>Calibration report no.</label><input data-report-field="reportNo" required></div><div class="form-field auto-field"><label>Calibration on</label><input data-report-field="calOn" type="date" required></div><div class="form-field auto-field"><label>Calibration due</label><input data-report-field="calDue" type="date" required></div><div class="form-field auto-field"><label>Page no.</label><input data-report-field="pageNo" required></div></div>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>02</span><div><h3>Customer & equipment</h3><p>Values that change for each certificate.</p></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Customer name</label><input data-report-field="customerName" required placeholder="M/s. Customer name"></div><div class="form-field"><label>Customer address</label><textarea data-report-field="customerAddress" rows="3" placeholder="Address and PIN code"></textarea></div>
+                  <div class="form-field"><label>Device</label><input data-report-field="device" value="Digital Temperature Controller"></div><div class="form-field"><label>Make</label><input data-report-field="make" value="ELECTRO GROUP OF INDUSTRIES"></div>
+                  <div class="form-field"><label>Serial no.</label><input data-report-field="serialNo" placeholder="31GRK317"></div><div class="form-field"><label>Equipment</label><input data-report-field="equipment" placeholder="Hot Chamber 1"></div>
+                  <div class="form-field"><label>Location</label><input data-report-field="location" placeholder="Boiler Area"></div><div class="form-field"><label>Environment condition</label><input data-report-field="environment" placeholder="Normal"></div>
+                  <div class="form-field"><label>Room temperature (°C)</label><input data-report-field="roomTemp" type="number" value="29"></div><div class="form-field"><label>Humidity</label><input data-report-field="humidity" value="55% to 85%"></div>
+                </div>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>03</span><div><h3>Calibration readings</h3><p>Observed error and remarks are calculated live.</p></div></div>
+                <div class="reading-meta-grid"><div class="form-field"><label>Sensor / parameter</label><input data-report-field="parameter" value="Sensor: PT-100"></div><div class="form-field"><label>Range</label><input data-report-field="range" value="0°C - 400°C"></div><div class="form-field auto-field"><label>Claimed error (%)</label><input data-report-field="claimedError" type="number" step="0.1" value="1"></div></div>
+                <div class="reading-table-wrap"><table class="reading-input-table"><thead><tr><th>Sl.</th><th>STD input (°C)</th><th>DUC reading (°C)</th><th>Error observed</th><th>Remarks</th><th></th></tr></thead><tbody id="readingsBody"></tbody></table></div><button class="small-action" type="button" onclick="addReadingRow()">+ Add reading</button>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>04</span><div><h3>Standard & approval</h3><p>Defaults from the supplied report; edit whenever the instrument or approver changes.</p></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Primary standard</label><input data-report-field="standardName" value="Temperature Calibrator"></div><div class="form-field"><label>Standard make</label><input data-report-field="standardMake" value="KusumMeco"></div>
+                  <div class="form-field"><label>Standard serial no.</label><input data-report-field="standardSerial" value="091101560"></div><div class="form-field"><label>Standard report no.</label><input data-report-field="standardReportNo" value="TSC/25-26/10092-1"></div>
+                  <div class="form-field"><label>Calibration validity</label><input data-report-field="standardValidity" type="date" value="2026-08-29"></div><div class="form-field"><label>Traceable to</label><input data-report-field="traceableTo" value="TRANSCAL, BANGALORE WHICH ARE TRACEABLE TO NABL"></div>
+                  <div class="form-field form-field--full"><label>Method</label><textarea data-report-field="method" rows="2">Digital Calibrator is used as Ohm source.</textarea></div><div class="form-field form-field--full"><label>Condition</label><textarea data-report-field="condition" rows="2">All the readings are within the specified error, valid at the time of and under the stated conditions of measurements.</textarea></div>
+                  <div class="form-field"><label>Calibrated by</label><input data-report-field="calibratedBy" value="Dalton"></div><div class="form-field"><label>Checked by</label><input data-report-field="checkedBy" value="Asha"></div><div class="form-field"><label>Authorised signatory</label><input data-report-field="authorisedBy" value="PRASANNA RAO"></div>
+                </div>
+              </div>
+            </form>
+            <aside class="preview-panel"><div class="preview-label"><span>LIVE TEMPLATE</span><small>Fixed border and layout</small></div><div id="calibrationPreview" class="calibration-sheet"></div></aside>
+          </div>
+        </section>
+
+        <section id="recordsView" class="panel hidden">
+          <div class="records-header"><div><span class="section-kicker">REPORT REGISTER</span><h2>Calibration report records</h2><p>Search, open, edit and export reports in an Excel-compatible format.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportReportsCsv()">Export for Excel</button><button class="primary-action" onclick="openReportBuilder()">New report</button></div></div>
+          <div class="records-controls"><input id="recordsSearch" type="search" placeholder="Search report no., customer, device or serial no."><span id="recordCount"></span></div><div class="table-wrapper"><table id="recordsTable" class="records-table"></table></div>
+        </section>
+
+        <section id="dbEditor" class="panel hidden"><div class="material-bar"><h3 id="dbTitle">Edit database</h3><button class="back-btn" onclick="backToLanding()">Back</button></div><div class="table-wrapper"><table id="dbTable"></table></div><button id="saveBtn" class="primary-action table-save" onclick="saveDatabase()">Save changes</button></section>
+      </main>
+    </div>
   </div>
 
-  <div class="choice-grid">
-    <button class="choice-btn" onclick="openCalculator()">Calculate Value</button>
-    <button class="choice-btn" onclick="openPassword()">Edit Database</button>
-  </div>
-
-</div>
-
-<!-- CALCULATOR -->
-<div id="calculator" class="panel hidden">
-
-  <div class="material-bar">
-    <span id="materialLabelCalc"></span>
-    <button class="back-btn" onclick="backToLanding()">Back</button>
-  </div>
-
-  <div class="form">
-
-    <div class="form-field">
-      <label>Wattage (W)</label>
-      <input id="wattage" type="number" inputmode="decimal" placeholder="Enter wattage">
-    </div>
-
-    <div class="form-field">
-      <label>Voltage (V)</label>
-      <input id="voltage" type="number" inputmode="decimal" placeholder="Enter voltage">
-    </div>
-
-    <div class="form-field">
-      <label>Heater OD (mm)</label>
-      <input id="heaterOD" type="number" inputmode="decimal" placeholder="Enter heater diameter">
-    </div>
-
-    <div class="form-field">
-      <label>Heater Length (mm)</label>
-      <input id="heaterLength" type="number" inputmode="decimal" placeholder="Total heater length">
-    </div>
-
-    <div class="form-field">
-      <label>Core Length (mm)</label>
-      <input id="coreLength" type="number" inputmode="decimal" placeholder="Winding length">
-    </div>
-
-    <div class="form-field">
-      <label>Pipe Thickness (mm)</label>
-      <div class="field-inline">
-        <input id="pipeThickness" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
-        <label class="switch">
-          <input type="checkbox" id="autoThickness" checked onchange="toggleAutoThickness()"> Auto
-        </label>
-      </div>
-    </div>
-
-    <div class="form-field">
-      <label>Pipe OD (mm)</label>
-      <div class="field-inline">
-        <input id="pipeOD" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
-        <label class="switch">
-          <input type="checkbox" id="autoPipeOD" checked onchange="toggleAutoPipeOD()"> Auto
-        </label>
-      </div>
-    </div>
-
-    <div class="form-field form-field--wide">
-      <label>Core OD (mm)</label>
-      <div class="field-inline">
-        <input id="coreOD" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
-        <label class="switch">
-          <input type="checkbox" id="autoCoreOD" checked onchange="toggleAutoCoreOD()"> Auto
-        </label>
-      </div>
-      <div id="coreODStatus" class="core-od-status"></div>
-    </div>
-
-    <div class="form-field">
-      <label>Extra Resistance (%)</label>
-      <input id="extra" type="number" inputmode="decimal" value="0">
-    </div>
-
-  </div>
-
-  <button class="primary-action" onclick="calculate()">Calculate</button>
-
-  <div id="result"></div>
-
-</div>
-
-<!-- PASSWORD MODAL -->
-<div id="passwordModal" class="modal hidden">
-  <div class="modal-box">
-    <h3>Enter Admin Password</h3>
-    <input type="password" id="dbPassword">
-    <button class="primary-action" onclick="checkPassword()">Enter</button>
-    <button class="secondary-action" onclick="closePassword()">Cancel</button>
-    <p id="passError"></p>
-  </div>
-</div>
-
-<!-- SAVE STATUS MODAL -->
-<div id="saveModal" class="modal hidden">
-  <div class="modal-box">
-    <h3 id="saveTitle">Status</h3>
-    <p id="saveMessage"></p>
-    <button class="primary-action" onclick="closeSaveModal()">OK</button>
-  </div>
-</div>
-
-<!-- DATABASE EDITOR -->
-<div id="dbEditor" class="panel hidden">
-
-  <div class="material-bar">
-    <h3 id="dbTitle">Edit Database</h3>
-    <button class="back-btn" onclick="backToLanding()">Back</button>
-  </div>
-
-  <div class="table-wrapper">
-    <table id="dbTable"></table>
-  </div>
-
-  <button id="saveBtn" class="primary-action" onclick="saveDatabase()">Save Changes</button>
-
-</div>
-
-</main>
-
-<script src="script.js"></script>
-
+  <div id="passwordModal" class="modal hidden"><div class="modal-box"><h3>Enter admin password</h3><input type="password" id="dbPassword"><button class="primary-action" onclick="checkPassword()">Enter</button><button class="secondary-action" onclick="closePassword()">Cancel</button><p id="passError"></p></div></div>
+  <div id="saveModal" class="modal hidden"><div class="modal-box"><h3 id="saveTitle">Status</h3><p id="saveMessage"></p><button class="primary-action" onclick="closeSaveModal()">OK</button></div></div>
+  <script src="script.js"></script>
 </body>
 </html>
