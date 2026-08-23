@@ -11,7 +11,7 @@
 <body>
   <div class="portal-shell">
     <aside class="sidebar">
-      <div class="brand"><img class="brand-logo" src="assets/electro-group-logo.png" alt="Electro Group of Industries logo"><div><strong>Electro Group</strong><small>of Industries</small></div></div>
+      <div class="brand"><img class="brand-logo" src="assets/electro-group-logo.png" alt="Electro Group of Industries logo"><div><strong>Electro Group</strong><small>of Industries</small></div><button class="sidebar-close" type="button" onclick="closeMobileSidebar()" aria-label="Close menu">×</button></div>
       <nav class="portal-nav" aria-label="Main navigation">
         <button class="nav-btn active" data-screen="dashboard" onclick="openDashboard()"><span>01</span>Overview</button>
         <button class="nav-btn" data-screen="material" onclick="openHeaterModule()"><span>02</span>Heater calculator</button>
@@ -25,16 +25,18 @@
       </nav>
       <div class="sidebar-note"><strong>Electro Group</strong><span>Engineering operations</span></div>
     </aside>
+    <button id="sidebarOverlay" class="sidebar-overlay" type="button" onclick="closeMobileSidebar()" aria-label="Close menu"></button>
 
     <div class="portal-main">
       <header class="topbar">
+        <button class="mobile-menu-button" type="button" onclick="toggleMobileSidebar()" aria-label="Open menu"><span></span><span></span><span></span></button>
         <div><p class="eyebrow">ELECTRO GROUP OF INDUSTRIES</p><h1 id="pageTitle">Operations & Automation</h1></div>
         <div class="topbar-actions"><span class="system-status"><i></i>System ready</span></div>
       </header>
 
       <main class="workspace">
         <section id="dashboard" class="app-view">
-          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div><button class="primary-action" onclick="openReportBuilder()">New calibration report</button></div>
+          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div><div class="overview-actions"><button class="ghost-btn" onclick="openHeaterModule()">Heater calculator</button><button class="primary-action" onclick="openReportBuilder()">New calibration report</button></div></div>
           <div class="metric-grid">
             <article class="metric-card"><span>Total reports</span><strong id="dashboardTotalReports">0</strong><small>Calibration records</small></article>
             <article class="metric-card"><span>Passed</span><strong id="dashboardPassedReports">0</strong><small>Reports within limit</small></article>

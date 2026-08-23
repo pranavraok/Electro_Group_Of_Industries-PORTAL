@@ -168,6 +168,7 @@ function setMaterialContext(type) {
 
 function renderScreen(screen, material = activeMaterial, options = {}) {
   currentScreen = screen;
+  closeMobileSidebar();
 
   passwordModal.classList.add("hidden");
   saveModal.classList.add("hidden");
@@ -681,6 +682,7 @@ function setupModalShortcuts() {
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
+    closeMobileSidebar();
     if (!passwordModal.classList.contains("hidden")) closePassword();
     if (!saveModal.classList.contains("hidden")) closeSaveModal();
   });
@@ -693,6 +695,26 @@ function setupModalShortcuts() {
     if (event.target === saveModal) closeSaveModal();
   });
 }
+
+function toggleMobileSidebar() {
+  const sidebar = document.querySelector(".sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  const shouldOpen = !sidebar.classList.contains("mobile-open");
+
+  sidebar.classList.toggle("mobile-open", shouldOpen);
+  overlay.classList.toggle("visible", shouldOpen);
+  document.body.classList.toggle("menu-open", shouldOpen);
+}
+
+function closeMobileSidebar() {
+  document.querySelector(".sidebar")?.classList.remove("mobile-open");
+  document.getElementById("sidebarOverlay")?.classList.remove("visible");
+  document.body.classList.remove("menu-open");
+}
+
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 900) closeMobileSidebar();
+});
 
 setupModalShortcuts();
 
