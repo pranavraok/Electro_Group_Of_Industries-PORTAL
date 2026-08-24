@@ -35,6 +35,8 @@ button { border: 0; cursor: pointer; }
 .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 28px 20px; color: var(--ink); border-right: 1px solid var(--line); background: #fff; box-shadow: 8px 0 28px rgba(28,34,45,.04); }
 .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 26px; border-bottom: 1px solid var(--line); }
 .brand-logo { width: 44px; height: 44px; flex: 0 0 auto; border: 2px solid #edc6cb; border-radius: 10px; object-fit: cover; }
+.calibration-context .brand-logo { width: 174px; height: 36px; border: 0; border-radius: 0; object-fit: contain; }
+.calibration-context .brand > div { display: none; }
 .brand strong, .brand small { display: block; }
 .brand strong { font-size: 16px; letter-spacing: .01em; }
 .brand strong { color: var(--ink); }

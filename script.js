@@ -187,6 +187,7 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   });
   const calibrationGroup = document.querySelector('[data-nav-group="calibration"]');
   const calibrationActive = ["reports", "records"].includes(screen);
+  updateBrandContext(calibrationActive);
   calibrationGroup.classList.toggle("active", calibrationActive);
   if (calibrationActive) calibrationGroup.classList.add("open");
   else calibrationGroup.classList.remove("open");
@@ -264,6 +265,19 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   if (activeTable && loadedTable !== activeTable) {
     loadDatabase();
   }
+}
+
+function updateBrandContext(calibrationActive) {
+  const brandLogo = document.getElementById("brandLogo");
+  document.body.classList.toggle("calibration-context", calibrationActive);
+  brandLogo.src = calibrationActive ? "assets/electrotech-services-logo.png" : "assets/electro-group-logo.png";
+  brandLogo.alt = calibrationActive ? "Electrotech Services logo" : "Electro Group of Industries logo";
+  document.getElementById("brandName").textContent = calibrationActive ? "Electrotech" : "Electro Group";
+  document.getElementById("brandSubtitle").textContent = calibrationActive ? "Services" : "of Industries";
+  document.getElementById("sidebarNoteName").textContent = calibrationActive ? "Electrotech Services" : "Electro Group";
+  document.getElementById("sidebarNoteText").textContent = calibrationActive ? "Calibration services" : "Engineering operations";
+  document.getElementById("topbarEyebrow").textContent = calibrationActive ? "ELECTROTECH SERVICES" : "ELECTRO GROUP OF INDUSTRIES";
+  document.title = calibrationActive ? "Electrotech Services — Calibration" : "Electro Group of Industries — Operations & Automation";
 }
 
 function saveHistoryState(screen, material = activeMaterial, replace = false) {
@@ -1332,7 +1346,7 @@ function ensureReportDefaults() {
   const sequence = String(nextReportSequence()).padStart(3, "0");
   if (!reportField("calOn").value) reportField("calOn").value = toInputDate(today);
   if (!reportField("calDue").value) reportField("calDue").value = calculateDueDate(reportField("calOn").value);
-  if (!reportField("reportNo").value) reportField("reportNo").value = `EGI/CAL/${sequence}/${getFinancialYearCode(today)}`;
+  if (!reportField("reportNo").value) reportField("reportNo").value = `ETS/CAL/${sequence}/${getFinancialYearCode(today)}`;
   if (!reportField("pageNo").value) reportField("pageNo").value = sequence;
   if (!document.querySelector("#readingsBody tr")) {
     [0, 50, 100, 175, 250, 400].forEach((standard, index) => addReadingRow({ standard, duc: [0, 50, 100, 176, 249, 400][index] }, false));
@@ -1402,6 +1416,22 @@ function collectReportData() {
   return report;
 }
 
+function methodForCalibrationParameter(parameter) {
+  const normalized = String(parameter || "").toUpperCase().replaceAll("-", " ");
+  if (/\b(J|K)\s*(TYPE)?\b/.test(normalized) || normalized.includes("THERMOCOUPLE")) {
+    return "Digital Calibrator is used as mV source.";
+  }
+  if (/\bPT\s*100\b/.test(normalized) || /\bRTD\b/.test(normalized)) {
+    return "Digital Calibrator is used as Ohm source.";
+  }
+  return "";
+}
+
+function updateCalibrationMethod() {
+  const method = methodForCalibrationParameter(reportField("parameter")?.value);
+  if (method) reportField("method").value = method;
+}
+
 function renderCalibrationPreview() {
   const preview = document.getElementById("calibrationPreview");
   if (!preview) return;
@@ -1421,7 +1451,7 @@ function renderCalibrationPreview() {
     <table class="certificate-readings"><thead><tr><th>Sl.<br>No</th><th>Parameter / Range<br>Temp/Ambt.</th><th>STD<br>Input</th><th>DUC<br>Reading</th><th>DUC error<br>claimed</th><th>DUC error<br>observed</th><th>Remarks</th></tr></thead><tbody>${readings.map((reading, index) => `<tr><td>${reading.index}.</td><td>${index === 0 ? `${escapeHtml(data.parameter || "—")}<br>(${escapeHtml(data.range || "—")})` : ""}</td><td>${reading.standard === "" ? "—" : escapeHtml(reading.standard) + "°C"}</td><td>${reading.duc === "" ? "—" : escapeHtml(reading.duc) + "°C"}</td><td>±${escapeHtml(data.claimedError || "0")}%</td><td>${reading.error === "" ? "—" : escapeHtml(reading.error)}</td><td>${escapeHtml(reading.remark || "—")}</td></tr>`).join("")}</tbody></table>
     <div class="certificate-standard"><strong>PRIMARY STANDARD USED :</strong><div class="standard-details"><span>${escapeHtml(data.standardName || "—")}</span><span>Make: ${escapeHtml(data.standardMake || "—")} &nbsp;&nbsp; SL.NO: ${escapeHtml(data.standardSerial || "—")}</span><span>Report No. ${escapeHtml(data.standardReportNo || "—")}</span><span>Cal. Validity: ${formatReportDate(data.standardValidity)}</span></div></div>
     <div class="certificate-notes"><div class="certificate-note"><b>TRACEABLE TO</b><span>:</span><span>${escapeHtml(data.traceableTo || "—")}</span></div><div class="certificate-note"><b>METHOD</b><span>:</span><span>${escapeHtml(data.method || "—")}</span></div><div class="certificate-note"><b>CONDITION</b><span>:</span><span>${escapeHtml(data.condition || "—")}</span></div></div>
-    <div class="certificate-signatures"><div class="signature-block"><strong>CALIBRATED BY</strong><div><div class="signature-name">${escapeHtml(data.calibratedBy || "—")}</div><div class="signature-role">(Calibration Engineer)</div></div></div><div class="signature-block"><strong>CHECKED BY</strong><div><div class="signature-name">${escapeHtml(data.checkedBy || "—")}</div><div class="signature-role">(Sr. Calibration Engineer)</div></div></div><div class="signature-block"><strong>For ELECTRO GROUP OF INDUSTRIES</strong><div><div class="signature-name">[${escapeHtml(data.authorisedBy || "—")}]</div></div></div></div>`;
+    <div class="certificate-signatures"><div class="signature-block"><strong>CALIBRATED BY</strong><div><div class="signature-name">${escapeHtml(data.calibratedBy || "—")}</div><div class="signature-role">(Calibration Engineer)</div></div></div><div class="signature-block"><strong>CHECKED BY</strong><div><div class="signature-name">${escapeHtml(data.checkedBy || "—")}</div><div class="signature-role">(Sr. Calibration Engineer)</div></div></div><div class="signature-block"><strong>For ELECTROTECH SERVICES</strong><div><div class="signature-name">[${escapeHtml(data.authorisedBy || "—")}]</div></div></div></div>`;
 }
 
 function resetReportForm() {
@@ -1525,7 +1555,7 @@ function exportReportsCsv() {
   const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `Electro_Group_Calibration_Reports_${toInputDate(new Date())}.csv`;
+  link.download = `Electrotech_Services_Calibration_Reports_${toInputDate(new Date())}.csv`;
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -1542,6 +1572,7 @@ function setupCalibrationAutomation() {
   form.addEventListener("input", (event) => {
     if (event.target === reportField("calOn")) reportField("calDue").value = calculateDueDate(event.target.value);
     if (event.target === reportField("reportNo")) rememberReportSequence(event.target.value);
+    if (event.target === reportField("parameter")) updateCalibrationMethod();
     renderCalibrationPreview();
   });
   document.getElementById("recordsSearch").addEventListener("input", renderReportRecords);
