@@ -197,13 +197,12 @@ tr.primary { background: var(--green-soft); font-weight: 850; } tr.secondary { b
 .reading-input-table input { min-height: 35px; padding: 6px 8px; text-align: center; }
 .reading-input-table td { padding: 6px; }.reading-input-table td:first-child { width: 44px; color: var(--muted); font-weight: 800; }
 .calculated-value { min-width: 70px; font-weight: 850; }.calculated-value.pass { color: var(--green); }.calculated-value.fail { color: var(--red); }
-.remove-reading { width: 29px; height: 29px; border-radius: 6px; color: var(--red); background: var(--red-soft); font-weight: 900; }
+.remove-reading { min-width: 56px; height: 29px; padding: 0 9px; border-radius: 6px; color: var(--red); background: var(--red-soft); font-size: 10px; font-weight: 900; }
 
 .preview-panel { min-width: 0; position: sticky; top: 18px; }
 .preview-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; }.preview-label small { font-weight: 600; letter-spacing: 0; }
 .calibration-sheet { width: 100%; min-height: 680px; padding: 26px 24px; border: 1px solid #c9ced5; background: #fff; box-shadow: 0 15px 40px rgba(26,34,45,.1); color: #111; font-family: "Times New Roman", serif; font-size: clamp(8px, .72vw, 11px); }
-.certificate-brand { display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
-.certificate-brand .certificate-service-logo { width: min(54%, 210px); height: auto; border: 0; border-radius: 0; object-fit: contain; }
+.certificate-letterhead-space { height: 35mm; }
 .certificate-title { width: max-content; margin: 0 auto 12px; padding: 4px 16px 3px; border: 1px solid #222; color: var(--brand-blue); font-size: 1.5em; font-weight: 800; letter-spacing: .02em; }
 .certificate-customer { margin-bottom: 8px; }.certificate-customer strong { display: block; font-size: 1.18em; text-decoration: underline; }.certificate-address { margin-top: 5px; white-space: pre-line; font-size: 1.08em; font-weight: 700; line-height: 1.22; }
 .certificate-control, .certificate-readings { width: 100%; border: 1px solid #222; table-layout: fixed; }

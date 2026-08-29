@@ -12,10 +12,12 @@ let loadedTable = null;
 let adminPassword = "";
 let calibrationReports = [];
 let editingReportId = null;
+let lastAutofilledCustomerKey = "";
 
 const APP_HISTORY_KEY = "heater-coil-calculator";
 const REPORT_STORAGE_KEY = "electrotech-calibration-reports-v1";
 const REPORT_SEQUENCE_KEY = "electro-group-calibration-sequence-v1";
+const CUSTOMER_STORAGE_KEY = "electrotech-customer-directory-v1";
 const HEATER_CALCULATION_COUNT_KEY = "electro-group-heater-calculation-count-v1";
 
 /* Available standard core diameters (mm) – sorted ascending */
@@ -215,6 +217,8 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   if (screen === "reports") {
     reportBuilder.classList.remove("hidden");
     if (!options.keepDraft && !editingReportId) ensureReportDefaults();
+    refreshCustomerSuggestions();
+    syncReportsFromSheet();
     renderCalibrationPreview();
     return;
   }
@@ -1252,9 +1256,73 @@ function persistLocalReports() {
   localStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify(calibrationReports));
 }
 
-function extractReportSequence(reportNumber) {
+function extractReportSequenceText(reportNumber) {
   const match = String(reportNumber || "").match(/(?:ETS|EGI)\/CAL\/(\d+)/i);
-  return match ? Number(match[1]) : null;
+  return match ? match[1] : "";
+}
+
+function extractReportSequence(reportNumber) {
+  const sequence = extractReportSequenceText(reportNumber);
+  return sequence ? Number(sequence) : null;
+}
+
+function syncPageNumberFromReportNumber() {
+  const sequence = extractReportSequenceText(reportField("reportNo")?.value);
+  if (sequence) reportField("pageNo").value = sequence;
+}
+
+function normalizeCustomerName(name) {
+  return String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function readCustomerDirectory() {
+  try {
+    const directory = JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_KEY) || "{}");
+    return directory && typeof directory === "object" && !Array.isArray(directory) ? directory : {};
+  } catch (_error) {
+    return {};
+  }
+}
+
+function rememberCustomerDetails(name, address, updatedAt = new Date().toISOString()) {
+  const key = normalizeCustomerName(name);
+  if (!key || !String(address || "").trim()) return;
+  const directory = readCustomerDirectory();
+  const existing = directory[key];
+  if (!existing || String(updatedAt) >= String(existing.updatedAt || "")) {
+    directory[key] = { name: String(name).trim(), address: String(address).trim(), updatedAt };
+    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(directory));
+  }
+}
+
+function mergeCustomersFromReports() {
+  calibrationReports.forEach((report) => rememberCustomerDetails(report.customerName, report.customerAddress, report.updatedAt));
+}
+
+function refreshCustomerSuggestions() {
+  const list = document.getElementById("customerDirectoryList");
+  if (!list) return;
+  mergeCustomersFromReports();
+  const customers = Object.values(readCustomerDirectory()).sort((a, b) => a.name.localeCompare(b.name));
+  list.replaceChildren(...customers.map((customer) => {
+    const option = document.createElement("option");
+    option.value = customer.name;
+    return option;
+  }));
+}
+
+function autofillCustomerAddress() {
+  const nameField = reportField("customerName");
+  const addressField = reportField("customerAddress");
+  const key = normalizeCustomerName(nameField?.value);
+  if (!key) {
+    lastAutofilledCustomerKey = "";
+    return;
+  }
+  const customer = readCustomerDirectory()[key];
+  if (!customer || key === lastAutofilledCustomerKey) return;
+  addressField.value = customer.address;
+  lastAutofilledCustomerKey = key;
 }
 
 function readReportSequenceState() {
@@ -1285,6 +1353,7 @@ async function syncReportsFromSheet() {
     });
     calibrationReports = Array.from(combined.values()).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
     persistLocalReports();
+    refreshCustomerSuggestions();
     const newestReport = calibrationReports[0];
     const sequenceState = readReportSequenceState();
     if (newestReport && (!sequenceState || String(newestReport.updatedAt || "") > String(sequenceState.updatedAt || ""))) {
@@ -1363,7 +1432,7 @@ function addReadingRow(reading = {}, shouldRender = true) {
     <td><input type="number" step="0.01" data-reading-field="duc" value="${escapeHtml(reading.duc ?? "")}"></td>
     <td class="calculated-value" data-reading-output="error">0</td>
     <td class="calculated-value pass" data-reading-output="remark">Pass</td>
-    <td><button type="button" class="remove-reading" aria-label="Remove reading" onclick="removeReadingRow(this)">×</button></td>`;
+    <td><button type="button" class="remove-reading" aria-label="Delete reading" onclick="removeReadingRow(this)">Delete</button></td>`;
   body.appendChild(row);
   renumberReadingRows();
   if (shouldRender) renderCalibrationPreview();
@@ -1380,6 +1449,9 @@ function removeReadingRow(button) {
 function renumberReadingRows() {
   document.querySelectorAll("#readingsBody tr").forEach((row, index) => {
     row.querySelector(".reading-number").textContent = `${index + 1}.`;
+    const deleteButton = row.querySelector(".remove-reading");
+    deleteButton.setAttribute("aria-label", `Delete reading ${index + 1}`);
+    deleteButton.title = `Delete Sl. No. ${index + 1}`;
   });
 }
 
@@ -1439,7 +1511,7 @@ function renderCalibrationPreview() {
   const address = escapeHtml(data.customerAddress || "Customer address").replaceAll("\n", "<br>");
   const readings = data.readings.length ? data.readings : [{ index: 1, standard: "", duc: "", error: "", remark: "" }];
   preview.innerHTML = `
-    <div class="certificate-brand"><img class="certificate-service-logo" src="assets/electrotech-services-logo.png" alt="Electrotech Services"></div>
+    <div class="certificate-letterhead-space" aria-hidden="true"></div>
     <div class="certificate-title">CALIBRATION REPORT</div>
     <div class="certificate-customer"><strong>CUSTOMER'S NAME &amp; ADDRESS</strong><div class="certificate-address">${escapeHtml(data.customerName || "M/s. Customer name")}<br>${address}</div></div>
     <table class="certificate-control"><thead><tr><th>CAL. REPORT NO.</th><th>CAL. ON</th><th>CAL. DUE</th><th>PAGE NO.</th></tr></thead><tbody><tr><td>${escapeHtml(data.reportNo)}</td><td>${formatReportDate(data.calOn)}</td><td>${formatReportDate(data.calDue)}</td><td>${escapeHtml(data.pageNo)}</td></tr></tbody></table>
@@ -1456,6 +1528,7 @@ function renderCalibrationPreview() {
 
 function resetReportForm() {
   editingReportId = null;
+  lastAutofilledCustomerKey = "";
   const form = document.getElementById("calibrationForm");
   form.reset();
   document.getElementById("readingsBody").innerHTML = "";
@@ -1488,7 +1561,9 @@ async function saveCalibrationReport() {
   if (existingIndex >= 0) calibrationReports[existingIndex] = report;
   else calibrationReports.unshift(report);
   if (existingIndex < 0 || reportNumberChanged) rememberReportSequence(report.reportNo, report.updatedAt);
+  rememberCustomerDetails(report.customerName, report.customerAddress, report.updatedAt);
   persistLocalReports();
+  refreshCustomerSuggestions();
   editingReportId = report.id;
   document.getElementById("reportFormTitle").textContent = `Edit ${report.reportNo}`;
 
@@ -1510,6 +1585,8 @@ function setReportFormData(report) {
   const body = document.getElementById("readingsBody");
   body.innerHTML = "";
   (report.readings || []).forEach((reading) => addReadingRow(reading, false));
+  syncPageNumberFromReportNumber();
+  lastAutofilledCustomerKey = normalizeCustomerName(report.customerName);
   document.getElementById("reportFormTitle").textContent = `Edit ${report.reportNo}`;
   renderCalibrationPreview();
 }
@@ -1567,11 +1644,16 @@ function printCalibrationReport() {
 
 function setupCalibrationAutomation() {
   loadLocalReports();
+  refreshCustomerSuggestions();
   ensureReportDefaults();
   const form = document.getElementById("calibrationForm");
   form.addEventListener("input", (event) => {
     if (event.target === reportField("calOn")) reportField("calDue").value = calculateDueDate(event.target.value);
-    if (event.target === reportField("reportNo")) rememberReportSequence(event.target.value);
+    if (event.target === reportField("reportNo")) {
+      rememberReportSequence(event.target.value);
+      syncPageNumberFromReportNumber();
+    }
+    if (event.target === reportField("customerName")) autofillCustomerAddress();
     if (event.target === reportField("parameter")) updateCalibrationMethod();
     renderCalibrationPreview();
   });
