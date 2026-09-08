@@ -18,8 +18,10 @@
         <div class="nav-group" data-nav-group="calibration">
           <button class="nav-btn nav-group-toggle" type="button" onclick="toggleCalibrationNav()"><span>03</span>Calibration <b aria-hidden="true">⌄</b></button>
           <div class="nav-submenu">
-            <button class="nav-subbtn" data-screen="reports" onclick="openReportBuilder()">New report</button>
-            <button class="nav-subbtn" data-screen="records" onclick="openReportRecords()">Records</button>
+            <button class="nav-subbtn" data-screen="reports" onclick="openReportBuilder()">New calibration</button>
+            <button class="nav-subbtn" data-screen="records" onclick="openReportRecords()">Calibration records</button>
+            <button class="nav-subbtn" data-screen="performanceReports" onclick="openPerformanceReportBuilder()">New performance</button>
+            <button class="nav-subbtn" data-screen="performanceRecords" onclick="openPerformanceReportRecords()">Performance records</button>
           </div>
         </div>
         <div class="nav-group" data-nav-group="offers">
@@ -43,17 +45,18 @@
 
       <main class="workspace">
         <section id="dashboard" class="app-view">
-          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div><div class="overview-actions"><button class="primary-action" onclick="openHeaterModule()">Heater calculator</button><button class="primary-action" onclick="openReportBuilder()">New calibration report</button><button class="primary-action" onclick="openOfferBuilder()">New offer letter</button></div></div>
+          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div><div class="overview-actions"><button class="primary-action" onclick="openHeaterModule()">Heater calculator</button><button class="primary-action" onclick="openReportBuilder()">New calibration report</button><button class="primary-action" onclick="openPerformanceReportBuilder()">New performance report</button><button class="primary-action" onclick="openOfferBuilder()">New offer letter</button></div></div>
           <div class="metric-grid">
             <article class="metric-card"><span>Total reports</span><strong id="dashboardTotalReports">0</strong><small>Calibration records</small></article>
             <article class="metric-card"><span>Passed</span><strong id="dashboardPassedReports">0</strong><small>Reports within limit</small></article>
             <article class="metric-card"><span>Due soon</span><strong id="dashboardDueSoon">0</strong><small>Next 30 days</small></article>
             <article class="metric-card"><span>Heater runs</span><strong id="dashboardHeaterRuns">0</strong><small>Completed calculations</small></article>
             <article class="metric-card"><span>Offer letters</span><strong id="dashboardOfferLetters">0</strong><small>Confirmed records</small></article>
+            <article class="metric-card"><span>Performance</span><strong id="dashboardPerformanceReports">0</strong><small>Equipment reports</small></article>
           </div>
           <div class="dashboard-grid">
             <article class="recent-card"><div class="card-heading"><div><h3>Recent reports</h3><small>Latest calibration records</small></div><button class="text-action" onclick="openReportRecords()">View all</button></div><div id="dashboardRecentReports" class="recent-list"></div></article>
-            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true"><h3>Quick actions</h3><button onclick="openReportBuilder()">New report <span>→</span></button><button onclick="openOfferBuilder()">New offer letter <span>→</span></button><button onclick="openHeaterModule()">Heater calculator <span>→</span></button><button onclick="openReportRecords()">Report records <span>→</span></button><button onclick="openOfferRecords()">Offer records <span>→</span></button></article>
+            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true"><h3>Quick actions</h3><button onclick="openReportBuilder()">New calibration <span>→</span></button><button onclick="openPerformanceReportBuilder()">New performance <span>→</span></button><button onclick="openOfferBuilder()">New offer letter <span>→</span></button><button onclick="openHeaterModule()">Heater calculator <span>→</span></button><button onclick="openReportRecords()">Calibration records <span>→</span></button><button onclick="openPerformanceReportRecords()">Performance records <span>→</span></button><button onclick="openOfferRecords()">Offer records <span>→</span></button></article>
           </div>
         </section>
 
@@ -125,6 +128,49 @@
         <section id="recordsView" class="panel hidden">
           <div class="records-header"><div><span class="section-kicker">REPORT REGISTER</span><h2>Calibration report records</h2><p>Search, open, edit and export reports in an Excel-compatible format.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportReportsCsv()">Export for Excel</button><button class="primary-action" onclick="openReportBuilder()">New report</button></div></div>
           <div class="records-controls"><input id="recordsSearch" type="search" placeholder="Search report no., customer, device or serial no."><span id="recordCount"></span></div><div class="table-wrapper"><table id="recordsTable" class="records-table"></table></div>
+        </section>
+
+        <section id="performanceReportBuilder" class="hidden">
+          <div class="report-toolbar"><div><span class="section-kicker">PERFORMANCE AUTOMATION</span><h2 id="performanceFormTitle">New performance report</h2><p>Linked to a calibration record with automatic error and result calculation.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="resetPerformanceReportForm()">New report</button><button class="ghost-btn" onclick="printPerformanceReport()">Print / PDF</button><button class="primary-action" onclick="savePerformanceReport()">Save report</button></div></div>
+          <div class="report-workspace">
+            <form id="performanceForm" class="report-form" onsubmit="return false">
+              <div class="form-section">
+                <div class="form-section-title"><span>01</span><div><h3>Report control</h3></div></div>
+                <div class="report-field-grid two"><div class="form-field form-field--full auto-field"><label>Linked calibration report</label><select data-performance-field="linkedCalibrationId" required><option value="">Select calibration report</option></select></div></div>
+                <div class="report-field-grid four"><div class="form-field auto-field"><label>Performance report no.</label><input data-performance-field="reportNo" required></div><div class="form-field auto-field"><label>Calibration on</label><input data-performance-field="calOn" type="date" required></div><div class="form-field auto-field"><label>Calibration due</label><input data-performance-field="calDue" type="date" required></div><div class="form-field auto-field"><label>Page no.</label><input data-performance-field="pageNo" required readonly title="Automatically follows the report number"></div></div>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>02</span><div><h3>Customer &amp; instrument</h3></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Customer name</label><input data-performance-field="customerName" list="customerDirectoryList" required placeholder="M/s. Customer name"></div><div class="form-field"><label>Customer address</label><textarea data-performance-field="customerAddress" rows="3" placeholder="Saved address fills automatically"></textarea></div>
+                  <div class="form-field form-field--full"><label>Instrument tested</label><input data-performance-field="instrumentTested" required placeholder="Electrode Drying Oven"></div><div class="form-field"><label>Serial no.</label><input data-performance-field="serialNo"></div>
+                  <div class="form-field"><label>Make</label><input data-performance-field="make"></div><div class="form-field"><label>Device</label><input data-performance-field="device"></div><div class="form-field"><label>Model</label><input data-performance-field="model"></div>
+                  <div class="form-field"><label>Room temperature</label><input data-performance-field="roomTemp" value="31°C ±2°C"></div><div class="form-field"><label>Humidity</label><input data-performance-field="humidity" value="55% ±5% RH"></div>
+                  <div class="form-field"><label>Instrument range</label><input data-performance-field="instrumentRange" value="Up to 250°C"></div><div class="form-field"><label>Accuracy</label><input data-performance-field="accuracy" type="number" min="0" step="0.01" value="3"></div><div class="form-field"><label>Error unit</label><select data-performance-field="errorUnit"><option value="°C" selected>°C</option><option value="%">%</option></select></div>
+                </div>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>03</span><div><h3>Performance readings</h3></div></div>
+                <div class="reading-table-wrap"><table class="reading-input-table performance-input-table"><thead><tr><th>Sl.</th><th>Reference</th><th>Observed</th><th>Error</th><th>Result</th><th>Action</th></tr></thead><tbody id="performanceReadingsBody"></tbody></table></div><button class="small-action" type="button" onclick="addPerformanceReadingRow()">+ Add reading</button>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>04</span><div><h3>Standard &amp; approval</h3></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Primary standard</label><input data-performance-field="standardName" value="Temperature Calibrator"></div><div class="form-field"><label>Standard make</label><input data-performance-field="standardMake" value="KusumMeco"></div>
+                  <div class="form-field"><label>Standard serial no.</label><input data-performance-field="standardSerial" value="091101560"></div><div class="form-field"><label>Standard report no.</label><input data-performance-field="standardReportNo" value="TSC/25-26/10092-1"></div>
+                  <div class="form-field"><label>Calibration validity</label><input data-performance-field="standardValidity" type="date" value="2026-08-29"></div><div class="form-field"><label>Traceable to</label><input data-performance-field="traceableTo" value="TRANSCAL, BANGALORE WHICH ARE TRACEABLE TO NABL"></div>
+                  <div class="form-field form-field--full"><label>Method</label><textarea data-performance-field="method" rows="2">Compared with calibrated Digital Temperature Indicator</textarea></div><div class="form-field form-field--full"><label>Condition</label><textarea data-performance-field="condition" rows="2">All the readings are within the specified error, valid at the time of and under the stated conditions of measurements.</textarea></div>
+                  <div class="form-field"><label>Calibrated by</label><input data-performance-field="calibratedBy" value="Dalton"></div><div class="form-field"><label>Checked by</label><input data-performance-field="checkedBy" value="Asha"></div><div class="form-field"><label>Authorised signatory</label><input data-performance-field="authorisedBy" value="PRASANNA RAO"></div>
+                </div>
+              </div>
+            </form>
+            <aside class="preview-panel"><div class="preview-label"><span>LIVE PERFORMANCE REPORT</span><small>A4 print-ready preview</small></div><div id="performancePreview" class="performance-sheet"></div></aside>
+          </div>
+        </section>
+
+        <section id="performanceRecordsView" class="panel hidden">
+          <div class="records-header"><div><span class="section-kicker">PERFORMANCE REGISTER</span><h2>Performance report records</h2><p>Linked equipment performance reports stored separately from calibration records.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportPerformanceReportsCsv()">Export for Excel</button><button class="primary-action" onclick="openPerformanceReportBuilder()">New report</button></div></div>
+          <div class="records-controls"><input id="performanceRecordsSearch" type="search" placeholder="Search report, linked calibration, customer or instrument"><span id="performanceRecordCount"></span></div><div class="table-wrapper"><table id="performanceRecordsTable" class="records-table"></table></div>
         </section>
 
         <section id="offerBuilder" class="hidden">

@@ -15,6 +15,9 @@ let editingReportId = null;
 let lastAutofilledCustomerKey = "";
 let offerLetters = [];
 let editingOfferId = null;
+let performanceReports = [];
+let editingPerformanceReportId = null;
+let lastAutofilledPerformanceCustomerKey = "";
 
 const APP_HISTORY_KEY = "heater-coil-calculator";
 const REPORT_STORAGE_KEY = "electrotech-calibration-reports-v1";
@@ -23,6 +26,7 @@ const CUSTOMER_STORAGE_KEY = "electrotech-customer-directory-v1";
 const HEATER_CALCULATION_COUNT_KEY = "electro-group-heater-calculation-count-v1";
 const OFFER_STORAGE_KEY = "electrotech-offer-letters-v1";
 const OFFER_SEQUENCE_KEY = "electrotech-offer-letter-sequence-v1";
+const PERFORMANCE_STORAGE_KEY = "electrotech-performance-reports-v1";
 
 /* Available standard core diameters (mm) – sorted ascending */
 const STANDARD_CORE_SIZES = [
@@ -76,6 +80,8 @@ const reportBuilder = document.getElementById("reportBuilder");
 const recordsView = document.getElementById("recordsView");
 const offerBuilder = document.getElementById("offerBuilder");
 const offerRecordsView = document.getElementById("offerRecordsView");
+const performanceReportBuilder = document.getElementById("performanceReportBuilder");
+const performanceRecordsView = document.getElementById("performanceRecordsView");
 const passwordModal = document.getElementById("passwordModal");
 const saveModal = document.getElementById("saveModal");
 const result = document.getElementById("result");
@@ -120,7 +126,7 @@ async function sheetsApiRequest(action, payload = {}) {
     );
   }
 
-  const isRead = action === "read" || action === "listReports" || action === "listOffers";
+  const isRead = action === "read" || action === "listReports" || action === "listPerformanceReports" || action === "listOffers";
   const options = isRead
     ? { method: "GET", redirect: "follow", cache: "no-store" }
     : {
@@ -189,6 +195,8 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   recordsView.classList.add("hidden");
   offerBuilder.classList.add("hidden");
   offerRecordsView.classList.add("hidden");
+  performanceReportBuilder.classList.add("hidden");
+  performanceRecordsView.classList.add("hidden");
 
   document.querySelectorAll(".nav-btn, .nav-subbtn").forEach((button) => {
     const target = button.dataset.screen;
@@ -196,7 +204,7 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
     button.classList.toggle("active", target === activeTarget);
   });
   const calibrationGroup = document.querySelector('[data-nav-group="calibration"]');
-  const calibrationActive = ["reports", "records"].includes(screen);
+  const calibrationActive = ["reports", "records", "performanceReports", "performanceRecords"].includes(screen);
   const offerGroup = document.querySelector('[data-nav-group="offers"]');
   const offerActive = ["offers", "offerRecords"].includes(screen);
   updateBrandContext(calibrationActive || offerActive);
@@ -215,6 +223,8 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
     database: "Wire Database",
     reports: "Calibration Report Builder",
     records: "Calibration Report Records",
+    performanceReports: "Performance Report Builder",
+    performanceRecords: "Performance Report Records",
     offers: "Offer Letter Generator",
     offerRecords: "Offer Letter Records"
   };
@@ -225,8 +235,10 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
     dashboard.classList.remove("hidden");
     loadLocalOffers();
     loadLocalReports();
+    loadLocalPerformanceReports();
     refreshDashboardMetrics();
     syncReportsFromSheet();
+    syncPerformanceReportsFromSheet();
     syncOffersFromSheet();
     return;
   }
@@ -245,6 +257,25 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
     loadLocalReports();
     renderReportRecords();
     syncReportsFromSheet();
+    return;
+  }
+
+  if (screen === "performanceReports") {
+    performanceReportBuilder.classList.remove("hidden");
+    if (!options.keepDraft && !editingPerformanceReportId) ensurePerformanceReportDefaults();
+    refreshCustomerSuggestions();
+    refreshLinkedCalibrationOptions(performanceField("linkedCalibrationId")?.value);
+    syncReportsFromSheet();
+    syncPerformanceReportsFromSheet();
+    renderPerformancePreview();
+    return;
+  }
+
+  if (screen === "performanceRecords") {
+    performanceRecordsView.classList.remove("hidden");
+    loadLocalPerformanceReports();
+    renderPerformanceReportRecords();
+    syncPerformanceReportsFromSheet();
     return;
   }
 
@@ -321,7 +352,7 @@ function saveHistoryState(screen, material = activeMaterial, replace = false) {
   const state = {
     app: APP_HISTORY_KEY,
     screen,
-    material: ["material", "dashboard", "reports", "records", "offers", "offerRecords"].includes(screen) ? null : material,
+    material: ["material", "dashboard", "reports", "records", "performanceReports", "performanceRecords", "offers", "offerRecords"].includes(screen) ? null : material,
     index: replace ? currentHistoryIndex : currentHistoryIndex + 1
   };
 
@@ -378,7 +409,7 @@ async function openReportBuilder() {
   navigateTo("reports", null);
   resetReportForm();
   const provisionalNumber = reportField("reportNo").value;
-  await syncReportsFromSheet();
+  await Promise.all([syncReportsFromSheet(), syncPerformanceReportsFromSheet()]);
   if (currentScreen === "reports" && !editingReportId && reportField("reportNo").value === provisionalNumber) {
     reportField("reportNo").value = "";
     reportField("pageNo").value = "";
@@ -389,6 +420,24 @@ async function openReportBuilder() {
 
 function openReportRecords() {
   navigateTo("records", null);
+}
+
+async function openPerformanceReportBuilder() {
+  editingPerformanceReportId = null;
+  navigateTo("performanceReports", null);
+  resetPerformanceReportForm();
+  const provisionalNumber = performanceField("reportNo").value;
+  await Promise.all([syncReportsFromSheet(), syncPerformanceReportsFromSheet()]);
+  if (currentScreen === "performanceReports" && !editingPerformanceReportId && performanceField("reportNo").value === provisionalNumber) {
+    performanceField("reportNo").value = "";
+    performanceField("pageNo").value = "";
+    ensurePerformanceReportDefaults();
+    renderPerformancePreview();
+  }
+}
+
+function openPerformanceReportRecords() {
+  navigateTo("performanceRecords", null);
 }
 
 async function openOfferBuilder() {
@@ -1351,6 +1400,7 @@ function rememberCustomerDetails(name, address, updatedAt = new Date().toISOStri
 
 function mergeCustomersFromReports() {
   calibrationReports.forEach((report) => rememberCustomerDetails(report.customerName, report.customerAddress, report.updatedAt));
+  performanceReports.forEach((report) => rememberCustomerDetails(report.customerName, report.customerAddress, report.updatedAt));
 }
 
 function refreshCustomerSuggestions() {
@@ -1414,6 +1464,7 @@ async function syncReportsFromSheet() {
       rememberReportSequence(newestReport.reportNo, newestReport.updatedAt);
     }
     if (currentScreen === "records") renderReportRecords();
+    if (currentScreen === "performanceReports") refreshLinkedCalibrationOptions(performanceField("linkedCalibrationId")?.value);
     if (currentScreen === "dashboard") refreshDashboardMetrics();
   } catch (error) {
     console.info("Shared report register is waiting for the updated Apps Script deployment.");
@@ -1422,11 +1473,11 @@ async function syncReportsFromSheet() {
 
 function nextReportSequence() {
   loadLocalReports();
+  loadLocalPerformanceReports();
   const sequenceState = readReportSequenceState();
   if (sequenceState) return Number(sequenceState.sequence) + 1;
-  const newestSequence = calibrationReports.length ? extractReportSequence(calibrationReports[0].reportNo) : null;
-  if (Number.isFinite(newestSequence)) return newestSequence + 1;
-  const highest = calibrationReports.reduce((max, report) => Math.max(max, extractReportSequence(report.reportNo) || 0), 0);
+  const allReports = [...calibrationReports, ...performanceReports];
+  const highest = allReports.reduce((max, report) => Math.max(max, extractReportSequence(report.reportNo) || 0), 0);
   return highest + 1;
 }
 
@@ -1456,6 +1507,7 @@ function refreshDashboardMetrics() {
   document.getElementById("dashboardDueSoon").textContent = dueSoon;
   document.getElementById("dashboardHeaterRuns").textContent = getHeaterCalculationCount();
   document.getElementById("dashboardOfferLetters").textContent = offerLetters.length;
+  document.getElementById("dashboardPerformanceReports").textContent = performanceReports.length;
 
   const recentList = document.getElementById("dashboardRecentReports");
   const recent = calibrationReports.slice(0, 5);
@@ -1694,7 +1746,7 @@ function exportReportsCsv() {
 
 function printCalibrationReport() {
   renderCalibrationPreview();
-  document.body.classList.remove("print-offer");
+  document.body.classList.remove("print-offer", "print-performance");
   document.body.classList.add("print-calibration");
   window.print();
 }
@@ -1716,6 +1768,360 @@ function setupCalibrationAutomation() {
   });
   document.getElementById("recordsSearch").addEventListener("input", renderReportRecords);
   renderCalibrationPreview();
+}
+
+/* =========================================================
+   PERFORMANCE REPORT AUTOMATION
+========================================================= */
+
+function performanceField(name) {
+  return document.querySelector(`[data-performance-field="${name}"]`);
+}
+
+function loadLocalPerformanceReports() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PERFORMANCE_STORAGE_KEY) || "[]");
+    performanceReports = Array.isArray(saved) ? saved : [];
+  } catch (_error) {
+    performanceReports = [];
+  }
+  return performanceReports;
+}
+
+function persistLocalPerformanceReports() {
+  localStorage.setItem(PERFORMANCE_STORAGE_KEY, JSON.stringify(performanceReports));
+}
+
+function syncPerformancePageNumber() {
+  const sequence = extractReportSequenceText(performanceField("reportNo")?.value);
+  if (sequence) performanceField("pageNo").value = sequence;
+}
+
+function refreshLinkedCalibrationOptions(selectedId = "") {
+  const select = performanceField("linkedCalibrationId");
+  if (!select) return;
+  loadLocalReports();
+  const current = selectedId || select.value;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = calibrationReports.length ? "Select calibration report" : "No calibration reports available";
+  select.replaceChildren(placeholder, ...calibrationReports.map((report) => {
+    const option = document.createElement("option");
+    option.value = report.id;
+    option.textContent = `${report.reportNo} — ${report.customerName || report.equipment || "Calibration report"}`;
+    return option;
+  }));
+  if (calibrationReports.some((report) => report.id === current)) select.value = current;
+}
+
+function applyLinkedCalibrationReport() {
+  loadLocalReports();
+  const linked = calibrationReports.find((report) => report.id === performanceField("linkedCalibrationId").value);
+  if (!linked) return;
+  const values = {
+    customerName: linked.customerName,
+    customerAddress: linked.customerAddress,
+    instrumentTested: linked.equipment || linked.device,
+    serialNo: linked.serialNo,
+    make: linked.make,
+    device: linked.device,
+    roomTemp: linked.roomTemp ? `${linked.roomTemp}°C` : "",
+    humidity: linked.humidity,
+    standardName: linked.standardName,
+    standardMake: linked.standardMake,
+    standardSerial: linked.standardSerial,
+    standardReportNo: linked.standardReportNo,
+    standardValidity: linked.standardValidity,
+    traceableTo: linked.traceableTo,
+    calibratedBy: linked.calibratedBy,
+    checkedBy: linked.checkedBy,
+    authorisedBy: linked.authorisedBy
+  };
+  Object.entries(values).forEach(([name, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) performanceField(name).value = value;
+  });
+  lastAutofilledPerformanceCustomerKey = normalizeCustomerName(linked.customerName);
+}
+
+function autofillPerformanceCustomerAddress() {
+  const nameField = performanceField("customerName");
+  const key = normalizeCustomerName(nameField?.value);
+  if (!key) {
+    lastAutofilledPerformanceCustomerKey = "";
+    return;
+  }
+  const customer = readCustomerDirectory()[key];
+  if (!customer || key === lastAutofilledPerformanceCustomerKey) return;
+  performanceField("customerAddress").value = customer.address;
+  lastAutofilledPerformanceCustomerKey = key;
+}
+
+function ensurePerformanceReportDefaults() {
+  if (!document.getElementById("performanceForm")) return;
+  const today = new Date();
+  const sequence = String(nextReportSequence()).padStart(3, "0");
+  if (!performanceField("calOn").value) performanceField("calOn").value = toInputDate(today);
+  if (!performanceField("calDue").value) performanceField("calDue").value = calculateDueDate(performanceField("calOn").value);
+  if (!performanceField("reportNo").value) performanceField("reportNo").value = `ETS/CAL/${sequence}/${getFinancialYearCode(today)}`;
+  if (!performanceField("pageNo").value) performanceField("pageNo").value = sequence;
+  if (!document.querySelector("#performanceReadingsBody tr")) {
+    [50, 75, 100, 150].forEach((reference) => addPerformanceReadingRow({ reference }, false));
+  }
+}
+
+function addPerformanceReadingRow(reading = {}, shouldRender = true) {
+  const body = document.getElementById("performanceReadingsBody");
+  if (!body) return;
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td class="performance-reading-number"></td>
+    <td><input type="number" step="0.01" data-performance-reading="reference" value="${escapeHtml(reading.reference ?? "")}"></td>
+    <td><input type="number" step="0.01" data-performance-reading="observed" value="${escapeHtml(reading.observed ?? "")}"></td>
+    <td class="calculated-value" data-performance-output="error">—</td>
+    <td class="calculated-value" data-performance-output="remark">—</td>
+    <td><button type="button" class="remove-reading" aria-label="Delete performance reading" onclick="removePerformanceReadingRow(this)">Delete</button></td>`;
+  body.appendChild(row);
+  renumberPerformanceReadingRows();
+  if (shouldRender) renderPerformancePreview();
+}
+
+function removePerformanceReadingRow(button) {
+  const body = document.getElementById("performanceReadingsBody");
+  if (body.rows.length <= 1) return;
+  button.closest("tr").remove();
+  renumberPerformanceReadingRows();
+  renderPerformancePreview();
+}
+
+function renumberPerformanceReadingRows() {
+  document.querySelectorAll("#performanceReadingsBody tr").forEach((row, index) => {
+    row.querySelector(".performance-reading-number").textContent = `${index + 1}.`;
+    const button = row.querySelector(".remove-reading");
+    button.setAttribute("aria-label", `Delete performance reading ${index + 1}`);
+    button.title = `Delete Sl. No. ${index + 1}`;
+  });
+}
+
+function calculatePerformanceReadings() {
+  const accuracy = Math.abs(Number(performanceField("accuracy")?.value) || 0);
+  const unit = performanceField("errorUnit")?.value || "°C";
+  return Array.from(document.querySelectorAll("#performanceReadingsBody tr")).map((row, index) => {
+    const referenceValue = row.querySelector('[data-performance-reading="reference"]').value;
+    const observedValue = row.querySelector('[data-performance-reading="observed"]').value;
+    const reference = Number(referenceValue);
+    const observed = Number(observedValue);
+    const complete = referenceValue !== "" && observedValue !== "";
+    const difference = complete ? observed - reference : 0;
+    const canCalculate = complete && (unit !== "%" || reference !== 0);
+    const error = canCalculate ? (unit === "%" ? difference / Math.abs(reference) * 100 : difference) : null;
+    const roundedError = error === null ? "" : Number(error.toFixed(2));
+    const pass = error !== null && Math.abs(error) <= accuracy + 0.000001;
+    const errorOutput = row.querySelector('[data-performance-output="error"]');
+    const remarkOutput = row.querySelector('[data-performance-output="remark"]');
+    errorOutput.textContent = error === null ? "—" : `${roundedError}${unit}`;
+    remarkOutput.textContent = error === null ? "—" : (pass ? "Pass" : "Fail");
+    remarkOutput.classList.toggle("pass", pass);
+    remarkOutput.classList.toggle("fail", error !== null && !pass);
+    return { index: index + 1, reference: complete ? reference : "", observed: complete ? observed : "", error: roundedError, remark: error === null ? "" : (pass ? "Pass" : "Fail") };
+  });
+}
+
+function collectPerformanceReportData() {
+  const report = {};
+  document.querySelectorAll("[data-performance-field]").forEach((field) => {
+    report[field.dataset.performanceField] = field.value.trim();
+  });
+  const linked = calibrationReports.find((item) => item.id === report.linkedCalibrationId);
+  report.linkedCalibrationNo = linked?.reportNo || report.linkedCalibrationNo || "";
+  report.readings = calculatePerformanceReadings();
+  const completedReadings = report.readings.filter((reading) => reading.remark);
+  report.status = completedReadings.length !== report.readings.length
+    ? "Pending"
+    : (completedReadings.every((reading) => reading.remark === "Pass") ? "Pass" : "Fail");
+  report.id = editingPerformanceReportId || `PERF-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  report.updatedAt = new Date().toISOString();
+  return report;
+}
+
+function performanceReadingCell(value, suffix = "") {
+  return value === "" || value === null || value === undefined ? "—" : `${escapeHtml(value)}${suffix}`;
+}
+
+function renderPerformancePreview() {
+  const preview = document.getElementById("performancePreview");
+  if (!preview) return;
+  const data = collectPerformanceReportData();
+  const address = escapeHtml(data.customerAddress || "Customer address").replaceAll("\n", "<br>");
+  const readings = data.readings.length ? data.readings : [{ reference: "", observed: "", error: "", remark: "" }];
+  const unit = data.errorUnit || "°C";
+  preview.innerHTML = `
+    <div class="certificate-letterhead-space" aria-hidden="true"></div>
+    <div class="certificate-title performance-title">PERFORMANCE REPORT</div>
+    <div class="certificate-customer"><strong>CUSTOMER'S NAME &amp; ADDRESS</strong><div class="certificate-address">${escapeHtml(data.customerName || "M/s. Customer name")}<br>${address}</div></div>
+    <table class="certificate-control"><thead><tr><th>REPORT NO.</th><th>CAL. ON</th><th>CAL. DUE</th><th>PAGE NO.</th></tr></thead><tbody><tr><td>${escapeHtml(data.reportNo || "—")}</td><td>${formatReportDate(data.calOn)}</td><td>${formatReportDate(data.calDue)}</td><td>${escapeHtml(data.pageNo || "—")}</td></tr></tbody></table>
+    <div class="performance-link"><b>Linked Calibration Report:</b> ${escapeHtml(data.linkedCalibrationNo || "—")}</div>
+    <div class="performance-equipment"><div><b>Instrument Tested:</b> ${escapeHtml(data.instrumentTested || "—")}</div><div><b>Sl. No:</b> ${escapeHtml(data.serialNo || "—")}</div>${data.make ? `<div><b>Make:</b> ${escapeHtml(data.make)}</div>` : ""}${data.device ? `<div><b>Device:</b> ${escapeHtml(data.device)}</div>` : ""}${data.model ? `<div><b>Model:</b> ${escapeHtml(data.model)}</div>` : ""}<div><b>Environment Condition:</b> ${escapeHtml(data.roomTemp || "—")} &nbsp;&nbsp; ${escapeHtml(data.humidity || "—")}</div><div><b>Instrument Range:</b> ${escapeHtml(data.instrumentRange || "—")}</div><div><b>Accuracy:</b> ±${escapeHtml(data.accuracy || "0")}${escapeHtml(unit)}</div></div>
+    <div class="performance-table-wrap"><table class="performance-readings"><tbody><tr><th>Reference (°C)</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.reference)}</td>`).join("")}</tr><tr><th>Observed (°C)</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.observed)}</td>`).join("")}</tr><tr><th>Error (${escapeHtml(unit)})</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.error)}</td>`).join("")}</tr><tr><th>Result</th>${readings.map((reading) => `<td class="${reading.remark === "Pass" ? "performance-pass" : (reading.remark === "Fail" ? "performance-fail" : "performance-pending")}">${escapeHtml(reading.remark || "—")}</td>`).join("")}</tr></tbody></table></div>
+      <div class="performance-overall ${data.status === "Pass" ? "performance-pass" : (data.status === "Fail" ? "performance-fail" : "performance-pending")}">Overall result: ${escapeHtml(data.status)}</div>
+    <div class="certificate-standard"><strong>PRIMARY STANDARD USED :</strong><div class="standard-details"><span>${escapeHtml(data.standardName || "—")}</span><span>Make: ${escapeHtml(data.standardMake || "—")} &nbsp;&nbsp; SL.NO: ${escapeHtml(data.standardSerial || "—")}</span><span>Report No. ${escapeHtml(data.standardReportNo || "—")}</span><span>Cal. Validity: ${formatReportDate(data.standardValidity)}</span></div></div>
+    <div class="certificate-notes"><div class="certificate-note"><b>TRACEABLE TO</b><span>:</span><span>${escapeHtml(data.traceableTo || "—")}</span></div><div class="certificate-note"><b>METHOD</b><span>:</span><span>${escapeHtml(data.method || "—")}</span></div><div class="certificate-note"><b>CONDITION</b><span>:</span><span>${escapeHtml(data.condition || "—")}</span></div></div>
+    <div class="certificate-signatures"><div class="signature-block"><strong>CALIBRATED BY</strong><div><div class="signature-name">${escapeHtml(data.calibratedBy || "—")}</div><div class="signature-role">(Calibration Engineer)</div></div></div><div class="signature-block"><strong>CHECKED BY</strong><div><div class="signature-name">${escapeHtml(data.checkedBy || "—")}</div><div class="signature-role">(Sr. Calibration Engineer)</div></div></div><div class="signature-block"><strong>For ELECTROTECH SERVICES</strong><div><div class="signature-name">[${escapeHtml(data.authorisedBy || "—")}]</div></div></div></div>`;
+}
+
+function resetPerformanceReportForm() {
+  editingPerformanceReportId = null;
+  lastAutofilledPerformanceCustomerKey = "";
+  document.getElementById("performanceForm").reset();
+  document.getElementById("performanceReadingsBody").innerHTML = "";
+  ["reportNo", "pageNo", "calOn", "calDue"].forEach((name) => performanceField(name).value = "");
+  document.getElementById("performanceFormTitle").textContent = "New performance report";
+  refreshLinkedCalibrationOptions();
+  ensurePerformanceReportDefaults();
+  renderPerformancePreview();
+}
+
+function validatePerformanceReport(report) {
+  if (!report.linkedCalibrationId) return "Select the linked calibration report.";
+  if (!report.reportNo || !report.calOn || !report.calDue || !report.customerName || !report.instrumentTested) return "Complete the report details, customer and instrument tested.";
+  if (!report.readings.length || report.readings.some((reading) => reading.reference === "" || reading.observed === "" || !reading.remark)) return "Complete all performance readings. Percentage error cannot use a zero reference.";
+  return "";
+}
+
+async function savePerformanceReport() {
+  const report = collectPerformanceReportData();
+  const validationError = validatePerformanceReport(report);
+  if (validationError) {
+    showSaveModal("Check report", validationError);
+    return;
+  }
+  loadLocalPerformanceReports();
+  const index = performanceReports.findIndex((item) => item.id === report.id);
+  if (index >= 0) performanceReports[index] = report;
+  else performanceReports.unshift(report);
+  rememberReportSequence(report.reportNo, report.updatedAt);
+  rememberCustomerDetails(report.customerName, report.customerAddress, report.updatedAt);
+  persistLocalPerformanceReports();
+  refreshCustomerSuggestions();
+  editingPerformanceReportId = report.id;
+  document.getElementById("performanceFormTitle").textContent = `Edit ${report.reportNo}`;
+  refreshDashboardMetrics();
+  try {
+    await sheetsApiRequest("savePerformanceReport", { report });
+    showSaveModal("Performance report saved", `${report.reportNo} is stored in the performance report register and Google Sheet.`);
+  } catch (error) {
+    console.warn(error);
+    showSaveModal("Performance report saved locally", `${report.reportNo} is available in this browser. Deploy the updated Google Apps Script to sync the performance_reports sheet.`);
+  }
+}
+
+function setPerformanceReportFormData(report) {
+  editingPerformanceReportId = report.id;
+  refreshLinkedCalibrationOptions(report.linkedCalibrationId);
+  document.querySelectorAll("[data-performance-field]").forEach((field) => {
+    const value = report[field.dataset.performanceField];
+    if (value !== undefined) field.value = value;
+  });
+  const body = document.getElementById("performanceReadingsBody");
+  body.innerHTML = "";
+  (report.readings || []).forEach((reading) => addPerformanceReadingRow(reading, false));
+  syncPerformancePageNumber();
+  lastAutofilledPerformanceCustomerKey = normalizeCustomerName(report.customerName);
+  document.getElementById("performanceFormTitle").textContent = `Edit ${report.reportNo}`;
+  renderPerformancePreview();
+}
+
+function editPerformanceReport(id) {
+  loadLocalPerformanceReports();
+  const report = performanceReports.find((item) => item.id === id);
+  if (!report) return;
+  navigateTo("performanceReports", null, { keepDraft: true });
+  setPerformanceReportFormData(report);
+}
+
+async function syncPerformanceReportsFromSheet() {
+  loadLocalPerformanceReports();
+  try {
+    const response = await sheetsApiRequest("listPerformanceReports");
+    if (!Array.isArray(response.data)) return;
+    const combined = new Map(performanceReports.map((report) => [report.id, report]));
+    response.data.forEach((remote) => {
+      const local = combined.get(remote.id);
+      if (!local || String(remote.updatedAt || "") > String(local.updatedAt || "")) combined.set(remote.id, remote);
+    });
+    performanceReports = Array.from(combined.values()).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    persistLocalPerformanceReports();
+    refreshCustomerSuggestions();
+    const newest = performanceReports[0];
+    const state = readReportSequenceState();
+    if (newest && (!state || String(newest.updatedAt || "") > String(state.updatedAt || ""))) rememberReportSequence(newest.reportNo, newest.updatedAt);
+    if (currentScreen === "performanceRecords") renderPerformanceReportRecords();
+    if (currentScreen === "dashboard") refreshDashboardMetrics();
+  } catch (_error) {
+    console.info("Shared performance report register is waiting for the updated Apps Script deployment.");
+  }
+}
+
+function renderPerformanceReportRecords() {
+  const table = document.getElementById("performanceRecordsTable");
+  if (!table) return;
+  const search = (document.getElementById("performanceRecordsSearch")?.value || "").toLowerCase().trim();
+  const filtered = performanceReports.filter((report) => [report.reportNo, report.linkedCalibrationNo, report.customerName, report.instrumentTested, report.serialNo].join(" ").toLowerCase().includes(search));
+  document.getElementById("performanceRecordCount").textContent = `${filtered.length} report${filtered.length === 1 ? "" : "s"}`;
+  table.innerHTML = `<thead><tr><th>Report no.</th><th>Linked calibration</th><th>Customer</th><th>Instrument</th><th>Cal. on</th><th>Status</th><th>Actions</th></tr></thead><tbody>${filtered.length ? filtered.map((report) => `<tr><td>${escapeHtml(report.reportNo)}</td><td>${escapeHtml(report.linkedCalibrationNo || "—")}</td><td>${escapeHtml(report.customerName)}</td><td>${escapeHtml(report.instrumentTested || "—")}<br><small>${escapeHtml(report.serialNo || "")}</small></td><td>${formatReportDate(report.calOn)}</td><td><span class="status-pill ${report.status === "Pass" ? "status-pill--ok" : "status-pill--fail"}">${escapeHtml(report.status)}</span></td><td><div class="record-actions"><button onclick="editPerformanceReport('${escapeHtml(report.id)}')">View / edit</button></div></td></tr>`).join("") : `<tr><td colspan="7" class="empty-state">No performance reports yet.</td></tr>`}</tbody>`;
+}
+
+function exportPerformanceReportsCsv() {
+  loadLocalPerformanceReports();
+  if (!performanceReports.length) {
+    showSaveModal("Nothing to export", "Create and save at least one performance report first.");
+    return;
+  }
+  const maxReadings = Math.max(...performanceReports.map((report) => (report.readings || []).length));
+  const headers = ["Report No", "Page No", "Linked Calibration Report", "Calibration On", "Calibration Due", "Customer", "Address", "Instrument Tested", "Serial No", "Make", "Device", "Model", "Room Temperature", "Humidity", "Instrument Range", "Accuracy", "Error Unit", "Primary Standard", "Standard Make", "Standard Serial", "Standard Report No", "Standard Validity", "Traceable To", "Method", "Condition", "Calibrated By", "Checked By", "Authorised By", "Status", "Updated At"];
+  const readingHeaders = Array.from({ length: maxReadings }, (_, index) => [`Reading ${index + 1} Reference`, `Reading ${index + 1} Observed`, `Reading ${index + 1} Error`, `Reading ${index + 1} Result`]).flat();
+  const lines = [[...headers, ...readingHeaders].map(csvCell).join(",")];
+  performanceReports.forEach((report) => {
+    const base = [report.reportNo, report.pageNo, report.linkedCalibrationNo, report.calOn, report.calDue, report.customerName, report.customerAddress, report.instrumentTested, report.serialNo, report.make, report.device, report.model, report.roomTemp, report.humidity, report.instrumentRange, report.accuracy, report.errorUnit, report.standardName, report.standardMake, report.standardSerial, report.standardReportNo, report.standardValidity, report.traceableTo, report.method, report.condition, report.calibratedBy, report.checkedBy, report.authorisedBy, report.status, report.updatedAt];
+    const readings = Array.from({ length: maxReadings }, (_, index) => {
+      const reading = (report.readings || [])[index] || {};
+      return [reading.reference, reading.observed, reading.error, reading.remark];
+    }).flat();
+    lines.push([...base, ...readings].map(csvCell).join(","));
+  });
+  const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Electrotech_Performance_Reports_${toInputDate(new Date())}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function printPerformanceReport() {
+  renderPerformancePreview();
+  document.body.classList.remove("print-calibration", "print-offer");
+  document.body.classList.add("print-performance");
+  window.print();
+}
+
+function setupPerformanceAutomation() {
+  loadLocalPerformanceReports();
+  refreshLinkedCalibrationOptions();
+  ensurePerformanceReportDefaults();
+  document.getElementById("performanceForm").addEventListener("input", (event) => {
+    if (event.target === performanceField("reportNo")) {
+      rememberReportSequence(event.target.value);
+      syncPerformancePageNumber();
+    }
+    if (event.target === performanceField("calOn")) performanceField("calDue").value = calculateDueDate(event.target.value);
+    if (event.target === performanceField("customerName")) autofillPerformanceCustomerAddress();
+    renderPerformancePreview();
+  });
+  document.getElementById("performanceForm").addEventListener("change", (event) => {
+    if (event.target === performanceField("linkedCalibrationId")) applyLinkedCalibrationReport();
+    renderPerformancePreview();
+  });
+  document.getElementById("performanceRecordsSearch").addEventListener("input", renderPerformanceReportRecords);
+  renderPerformancePreview();
 }
 
 /* =========================================================
@@ -1950,7 +2356,7 @@ function exportOffersCsv() {
 
 function printOfferLetter() {
   renderOfferPreview();
-  document.body.classList.remove("print-calibration");
+  document.body.classList.remove("print-calibration", "print-performance");
   document.body.classList.add("print-offer");
   window.print();
 }
@@ -1960,9 +2366,10 @@ function setupOfferAutomation() {
   ensureOfferDefaults();
   document.getElementById("offerForm").addEventListener("input", renderOfferPreview);
   document.getElementById("offerRecordsSearch").addEventListener("input", renderOfferRecords);
-  window.addEventListener("afterprint", () => document.body.classList.remove("print-calibration", "print-offer"));
+  window.addEventListener("afterprint", () => document.body.classList.remove("print-calibration", "print-performance", "print-offer"));
   renderOfferPreview();
 }
 
 setupCalibrationAutomation();
+setupPerformanceAutomation();
 setupOfferAutomation();

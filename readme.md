@@ -15,6 +15,8 @@ A browser-based engineering and calibration workflow for ELECTRO GROUP OF INDUST
 - Automatic observed-error and pass/fail results
 - Editable bordered report template based on the supplied certificate
 - Browser report register with Google Sheets synchronization
+- Linked performance reports with selectable °C/% error, automatic Pass/Fail, shared numbering and customer reuse
+- Separate searchable `performance_reports` register with Excel-compatible export
 - Excel-compatible CSV export containing report details and all readings
 - Live overview metrics for reports, passing records, due dates, and heater calculations
 - Offer-letter placeholder filler based on the supplied Electrotech Services format
@@ -49,4 +51,4 @@ Both wire tabs use the same columns:
 
 Do not rename the tabs or column headers. The webpage editor updates complete rows and the backend validates all numeric values before saving.
 
-Calibration reports are stored in `calibration_reports`. Confirmed offer letters are stored independently in `offer_letters`. The backend creates either tab automatically when its register is first opened or a record is saved. Until the updated Apps Script is deployed, the website keeps both record types safely in that browser and still allows Excel-compatible export.
+Calibration reports are stored in `calibration_reports`, linked performance reports in `performance_reports`, and confirmed offer letters in `offer_letters`. The backend creates each tab automatically when its register is first opened or a record is saved. Until the updated Apps Script is deployed, the website keeps all record types safely in that browser and still allows Excel-compatible export.

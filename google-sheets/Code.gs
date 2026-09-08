@@ -11,6 +11,11 @@ const REPORT_HEADERS = [
   "id", "report_no", "page_no", "cal_on", "cal_due", "customer_name",
   "device", "serial_no", "equipment", "location", "status", "payload_json", "updated_at"
 ];
+const PERFORMANCE_REPORT_SHEET = "performance_reports";
+const PERFORMANCE_REPORT_HEADERS = [
+  "id", "report_no", "page_no", "linked_calibration_no", "cal_on", "cal_due",
+  "customer_name", "instrument_tested", "serial_no", "status", "error_unit", "payload_json", "updated_at"
+];
 const OFFER_SHEET = "offer_letters";
 const OFFER_HEADERS = [
   "id", "offer_no", "candidate_name", "designation", "offer_date",
@@ -25,6 +30,10 @@ function doGet(event) {
 
     if (action === "listReports") {
       return json_({ ok: true, data: listReports_() });
+    }
+
+    if (action === "listPerformanceReports") {
+      return json_({ ok: true, data: listPerformanceReports_() });
     }
 
     if (action === "listOffers") {
@@ -60,6 +69,12 @@ function doPost(event) {
     if (body.action === "saveReport") {
       const report = validateReport_(body.report);
       saveReport_(report);
+      return json_({ ok: true, id: report.id, reportNo: report.reportNo });
+    }
+
+    if (body.action === "savePerformanceReport") {
+      const report = validatePerformanceReport_(body.report);
+      savePerformanceReport_(report);
       return json_({ ok: true, id: report.id, reportNo: report.reportNo });
     }
 
@@ -149,6 +164,82 @@ function formatReportSheet_(sheet) {
     .setFontColor("#ffffff");
   sheet.getRange("D:E").setNumberFormat("yyyy-mm-dd");
   sheet.autoResizeColumns(1, REPORT_HEADERS.length);
+  sheet.setColumnWidth(12, 420);
+}
+
+function getPerformanceReportSheet_() {
+  const spreadsheet = getSpreadsheet_();
+  let sheet = spreadsheet.getSheetByName(PERFORMANCE_REPORT_SHEET);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(PERFORMANCE_REPORT_SHEET);
+    sheet.getRange(1, 1, 1, PERFORMANCE_REPORT_HEADERS.length).setValues([PERFORMANCE_REPORT_HEADERS]);
+    formatPerformanceReportSheet_(sheet);
+  }
+  return sheet;
+}
+
+function listPerformanceReports_() {
+  const sheet = getPerformanceReportSheet_();
+  if (sheet.getLastRow() < 2) return [];
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, PERFORMANCE_REPORT_HEADERS.length).getValues()
+    .filter(function (row) { return row[0] !== ""; })
+    .map(function (row) {
+      try { return JSON.parse(String(row[11] || "{}")); }
+      catch (_error) { return null; }
+    })
+    .filter(function (report) { return report && report.id; })
+    .sort(function (a, b) { return String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")); });
+}
+
+function savePerformanceReport_(report) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = getPerformanceReportSheet_();
+    const lastRow = sheet.getLastRow();
+    let targetRow = lastRow + 1;
+    if (lastRow >= 2) {
+      const ids = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+      for (let index = 0; index < ids.length; index++) {
+        if (String(ids[index][0]) === report.id) {
+          targetRow = index + 2;
+          break;
+        }
+      }
+    }
+    const values = [[
+      report.id, report.reportNo, report.pageNo, report.linkedCalibrationNo,
+      report.calOn, report.calDue, report.customerName, report.instrumentTested,
+      report.serialNo, report.status, report.errorUnit, JSON.stringify(report), report.updatedAt
+    ]];
+    sheet.getRange(targetRow, 1, 1, PERFORMANCE_REPORT_HEADERS.length).setValues(values);
+    formatPerformanceReportSheet_(sheet);
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function validatePerformanceReport_(source) {
+  if (!source || typeof source !== "object") throw new Error("Performance report is missing.");
+  const report = JSON.parse(JSON.stringify(source));
+  ["id", "reportNo", "pageNo", "linkedCalibrationId", "linkedCalibrationNo", "calOn", "calDue", "customerName", "instrumentTested", "errorUnit"].forEach(function (field) {
+    if (!String(report[field] || "").trim()) throw new Error("Missing performance report field: " + field);
+  });
+  if (["°C", "%"].indexOf(report.errorUnit) === -1) throw new Error("Performance error unit is invalid.");
+  if (!Array.isArray(report.readings) || report.readings.length === 0 || report.readings.length > 50) throw new Error("Performance readings are missing or invalid.");
+  if (JSON.stringify(report).length > 45000) throw new Error("Performance report is too large.");
+  return report;
+}
+
+function formatPerformanceReportSheet_(sheet) {
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, PERFORMANCE_REPORT_HEADERS.length)
+    .setFontWeight("bold")
+    .setBackground("#29277e")
+    .setFontColor("#ffffff");
+  sheet.getRange("E:F").setNumberFormat("yyyy-mm-dd");
+  sheet.autoResizeColumns(1, PERFORMANCE_REPORT_HEADERS.length);
   sheet.setColumnWidth(12, 420);
 }
 
