@@ -22,6 +22,13 @@
             <button class="nav-subbtn" data-screen="records" onclick="openReportRecords()">Records</button>
           </div>
         </div>
+        <div class="nav-group" data-nav-group="offers">
+          <button class="nav-btn nav-group-toggle" type="button" onclick="toggleOfferNav()"><span>04</span>Offer letters <b aria-hidden="true">⌄</b></button>
+          <div class="nav-submenu">
+            <button class="nav-subbtn" data-screen="offers" onclick="openOfferBuilder()">New offer</button>
+            <button class="nav-subbtn" data-screen="offerRecords" onclick="openOfferRecords()">Records</button>
+          </div>
+        </div>
       </nav>
       <div class="sidebar-note"><strong id="sidebarNoteName">Electro Group</strong><span id="sidebarNoteText">Engineering operations</span></div>
     </aside>
@@ -36,16 +43,17 @@
 
       <main class="workspace">
         <section id="dashboard" class="app-view">
-          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div><div class="overview-actions"><button class="primary-action" onclick="openHeaterModule()">Heater calculator</button><button class="primary-action" onclick="openReportBuilder()">New calibration report</button></div></div>
+          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div><div class="overview-actions"><button class="primary-action" onclick="openHeaterModule()">Heater calculator</button><button class="primary-action" onclick="openReportBuilder()">New calibration report</button><button class="primary-action" onclick="openOfferBuilder()">New offer letter</button></div></div>
           <div class="metric-grid">
             <article class="metric-card"><span>Total reports</span><strong id="dashboardTotalReports">0</strong><small>Calibration records</small></article>
             <article class="metric-card"><span>Passed</span><strong id="dashboardPassedReports">0</strong><small>Reports within limit</small></article>
             <article class="metric-card"><span>Due soon</span><strong id="dashboardDueSoon">0</strong><small>Next 30 days</small></article>
             <article class="metric-card"><span>Heater runs</span><strong id="dashboardHeaterRuns">0</strong><small>Completed calculations</small></article>
+            <article class="metric-card"><span>Offer letters</span><strong id="dashboardOfferLetters">0</strong><small>Confirmed records</small></article>
           </div>
           <div class="dashboard-grid">
             <article class="recent-card"><div class="card-heading"><div><h3>Recent reports</h3><small>Latest calibration records</small></div><button class="text-action" onclick="openReportRecords()">View all</button></div><div id="dashboardRecentReports" class="recent-list"></div></article>
-            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true"><h3>Quick actions</h3><button onclick="openReportBuilder()">New report <span>→</span></button><button onclick="openHeaterModule()">Heater calculator <span>→</span></button><button onclick="openReportRecords()">Report records <span>→</span></button></article>
+            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true"><h3>Quick actions</h3><button onclick="openReportBuilder()">New report <span>→</span></button><button onclick="openOfferBuilder()">New offer letter <span>→</span></button><button onclick="openHeaterModule()">Heater calculator <span>→</span></button><button onclick="openReportRecords()">Report records <span>→</span></button><button onclick="openOfferRecords()">Offer records <span>→</span></button></article>
           </div>
         </section>
 
@@ -117,6 +125,55 @@
         <section id="recordsView" class="panel hidden">
           <div class="records-header"><div><span class="section-kicker">REPORT REGISTER</span><h2>Calibration report records</h2><p>Search, open, edit and export reports in an Excel-compatible format.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportReportsCsv()">Export for Excel</button><button class="primary-action" onclick="openReportBuilder()">New report</button></div></div>
           <div class="records-controls"><input id="recordsSearch" type="search" placeholder="Search report no., customer, device or serial no."><span id="recordCount"></span></div><div class="table-wrapper"><table id="recordsTable" class="records-table"></table></div>
+        </section>
+
+        <section id="offerBuilder" class="hidden">
+          <div class="report-toolbar"><div><span class="section-kicker">HR AUTOMATION</span><h2 id="offerFormTitle">New offer letter</h2><p>Fill the placeholders, review the live letter, then confirm to save every detail.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="resetOfferForm()">New offer</button><button class="ghost-btn" onclick="printOfferLetter()">Print / PDF</button><button class="primary-action" onclick="confirmOfferLetter()">Confirm &amp; save</button></div></div>
+          <div class="report-workspace">
+            <form id="offerForm" class="report-form" onsubmit="return false">
+              <div class="form-section">
+                <div class="form-section-title"><span>01</span><div><h3>Candidate &amp; dates</h3><p>The offer number and date are filled automatically.</p></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field auto-field"><label>Offer record no.</label><input data-offer-field="offerNo" required readonly></div>
+                  <div class="form-field auto-field"><label>Offer date</label><input data-offer-field="offerDate" type="date" required></div>
+                  <div class="form-field form-field--full"><label>Candidate name</label><input data-offer-field="candidateName" required placeholder="Full name"></div>
+                  <div class="form-field"><label>Interview date</label><input data-offer-field="interviewDate" type="date" required></div>
+                  <div class="form-field"><label>Date of joining</label><input data-offer-field="joiningDate" type="date" required></div>
+                  <div class="form-field form-field--full"><label>Designation</label><input data-offer-field="designation" required placeholder="DESIGN / PRODUCTION ENGINEER"></div>
+                </div>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>02</span><div><h3>Company &amp; appointment wording</h3><p>Defaults match the supplied Electrotech Services letter.</p></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Company name</label><input data-offer-field="companyName" value="Electrotech Services"></div>
+                  <div class="form-field"><label>Work location</label><input data-offer-field="workLocation" value="Baikampady"></div>
+                  <div class="form-field form-field--full"><label>Office address</label><input data-offer-field="officeAddress" value="Adjacent to Sm. 180, Industrial Area, Mangaluru, Baikampady, Mangalore-575011, Karnataka"></div>
+                  <div class="form-field"><label>Probation period (months)</label><input data-offer-field="probationMonths" type="number" min="0" value="6"></div>
+                  <div class="form-field"><label>Authorised name</label><input data-offer-field="authorisedName" value="ASHA"></div>
+                </div>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>03</span><div><h3>Documents &amp; benefits</h3><p>Use one required document per line.</p></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field form-field--full"><label>Documents to carry</label><textarea data-offer-field="documents" rows="8">Aadhar Card (Original &amp; Photocopy)
+PAN Card (Original &amp; Photocopy)
+Bank details / supporting proof (Original &amp; Photocopy)
+2 passport-size photographs
+Educational certificates from SSLC to final degree (Original &amp; Photocopy)
+Previous experience certificates and relieving letter
+ESI Registration Number</textarea></div>
+                  <div class="form-field form-field--full"><label>Benefits and policy wording</label><textarea data-offer-field="benefitsText" rows="4">ESI benefits will be provided from the date of joining, in accordance with applicable company policy and statutory eligibility requirements. Spot appreciation and special increment will be given based on performance.</textarea></div>
+                  <div class="form-field form-field--full"><label>Closing message</label><textarea data-offer-field="welcomeText" rows="2">We look forward to welcoming you to Electrotech Services.</textarea></div>
+                </div>
+              </div>
+            </form>
+            <aside class="preview-panel"><div class="preview-label"><span>LIVE OFFER LETTER</span><small>A4 print-ready preview</small></div><div id="offerPreview" class="offer-sheet"></div></aside>
+          </div>
+        </section>
+
+        <section id="offerRecordsView" class="panel hidden">
+          <div class="records-header"><div><span class="section-kicker">OFFER LETTER REGISTER</span><h2>Confirmed offer letters</h2><p>Every confirmed offer is stored separately from calibration records.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportOffersCsv()">Export for Excel</button><button class="primary-action" onclick="openOfferBuilder()">New offer</button></div></div>
+          <div class="records-controls"><input id="offerRecordsSearch" type="search" placeholder="Search offer no., candidate or designation"><span id="offerRecordCount"></span></div><div class="table-wrapper"><table id="offerRecordsTable" class="records-table"></table></div>
         </section>
 
         <section id="dbEditor" class="panel hidden"><div class="material-bar"><h3 id="dbTitle">Edit database</h3><button class="back-btn" onclick="backToLanding()">Back</button></div><div class="table-wrapper"><table id="dbTable"></table></div><button id="saveBtn" class="primary-action table-save" onclick="saveDatabase()">Save changes</button></section>

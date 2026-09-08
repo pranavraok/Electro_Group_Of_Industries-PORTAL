@@ -13,12 +13,16 @@ let adminPassword = "";
 let calibrationReports = [];
 let editingReportId = null;
 let lastAutofilledCustomerKey = "";
+let offerLetters = [];
+let editingOfferId = null;
 
 const APP_HISTORY_KEY = "heater-coil-calculator";
 const REPORT_STORAGE_KEY = "electrotech-calibration-reports-v1";
 const REPORT_SEQUENCE_KEY = "electro-group-calibration-sequence-v1";
 const CUSTOMER_STORAGE_KEY = "electrotech-customer-directory-v1";
 const HEATER_CALCULATION_COUNT_KEY = "electro-group-heater-calculation-count-v1";
+const OFFER_STORAGE_KEY = "electrotech-offer-letters-v1";
+const OFFER_SEQUENCE_KEY = "electrotech-offer-letter-sequence-v1";
 
 /* Available standard core diameters (mm) – sorted ascending */
 const STANDARD_CORE_SIZES = [
@@ -70,6 +74,8 @@ const calculator = document.getElementById("calculator");
 const dbEditor = document.getElementById("dbEditor");
 const reportBuilder = document.getElementById("reportBuilder");
 const recordsView = document.getElementById("recordsView");
+const offerBuilder = document.getElementById("offerBuilder");
+const offerRecordsView = document.getElementById("offerRecordsView");
 const passwordModal = document.getElementById("passwordModal");
 const saveModal = document.getElementById("saveModal");
 const result = document.getElementById("result");
@@ -114,7 +120,7 @@ async function sheetsApiRequest(action, payload = {}) {
     );
   }
 
-  const isRead = action === "read" || action === "listReports";
+  const isRead = action === "read" || action === "listReports" || action === "listOffers";
   const options = isRead
     ? { method: "GET", redirect: "follow", cache: "no-store" }
     : {
@@ -181,6 +187,8 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   dbEditor.classList.add("hidden");
   reportBuilder.classList.add("hidden");
   recordsView.classList.add("hidden");
+  offerBuilder.classList.add("hidden");
+  offerRecordsView.classList.add("hidden");
 
   document.querySelectorAll(".nav-btn, .nav-subbtn").forEach((button) => {
     const target = button.dataset.screen;
@@ -189,10 +197,15 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   });
   const calibrationGroup = document.querySelector('[data-nav-group="calibration"]');
   const calibrationActive = ["reports", "records"].includes(screen);
-  updateBrandContext(calibrationActive);
+  const offerGroup = document.querySelector('[data-nav-group="offers"]');
+  const offerActive = ["offers", "offerRecords"].includes(screen);
+  updateBrandContext(calibrationActive || offerActive);
   calibrationGroup.classList.toggle("active", calibrationActive);
   if (calibrationActive) calibrationGroup.classList.add("open");
   else calibrationGroup.classList.remove("open");
+  offerGroup.classList.toggle("active", offerActive);
+  if (offerActive) offerGroup.classList.add("open");
+  else offerGroup.classList.remove("open");
 
   const titleMap = {
     dashboard: "Operations & Automation",
@@ -201,16 +214,20 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
     calculator: "Heater Coil Calculator",
     database: "Wire Database",
     reports: "Calibration Report Builder",
-    records: "Calibration Report Records"
+    records: "Calibration Report Records",
+    offers: "Offer Letter Generator",
+    offerRecords: "Offer Letter Records"
   };
   const pageTitle = document.getElementById("pageTitle");
   if (pageTitle) pageTitle.textContent = titleMap[screen] || "Operations & Automation";
 
   if (screen === "dashboard") {
     dashboard.classList.remove("hidden");
+    loadLocalOffers();
     loadLocalReports();
     refreshDashboardMetrics();
     syncReportsFromSheet();
+    syncOffersFromSheet();
     return;
   }
 
@@ -228,6 +245,22 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
     loadLocalReports();
     renderReportRecords();
     syncReportsFromSheet();
+    return;
+  }
+
+  if (screen === "offers") {
+    offerBuilder.classList.remove("hidden");
+    if (!options.keepDraft && !editingOfferId) ensureOfferDefaults();
+    syncOffersFromSheet();
+    renderOfferPreview();
+    return;
+  }
+
+  if (screen === "offerRecords") {
+    offerRecordsView.classList.remove("hidden");
+    loadLocalOffers();
+    renderOfferRecords();
+    syncOffersFromSheet();
     return;
   }
 
@@ -271,24 +304,24 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   }
 }
 
-function updateBrandContext(calibrationActive) {
+function updateBrandContext(servicesActive) {
   const brandLogo = document.getElementById("brandLogo");
-  document.body.classList.toggle("calibration-context", calibrationActive);
-  brandLogo.src = calibrationActive ? "assets/electrotech-services-logo.png" : "assets/electro-group-logo.png";
-  brandLogo.alt = calibrationActive ? "Electrotech Services logo" : "Electro Group of Industries logo";
-  document.getElementById("brandName").textContent = calibrationActive ? "Electrotech" : "Electro Group";
-  document.getElementById("brandSubtitle").textContent = calibrationActive ? "Services" : "of Industries";
-  document.getElementById("sidebarNoteName").textContent = calibrationActive ? "Electrotech Services" : "Electro Group";
-  document.getElementById("sidebarNoteText").textContent = calibrationActive ? "Calibration services" : "Engineering operations";
-  document.getElementById("topbarEyebrow").textContent = calibrationActive ? "ELECTROTECH SERVICES" : "ELECTRO GROUP OF INDUSTRIES";
-  document.title = calibrationActive ? "Electrotech Services — Calibration" : "Electro Group of Industries — Operations & Automation";
+  document.body.classList.toggle("calibration-context", servicesActive);
+  brandLogo.src = servicesActive ? "assets/electrotech-services-logo.png" : "assets/electro-group-logo.png";
+  brandLogo.alt = servicesActive ? "Electrotech Services logo" : "Electro Group of Industries logo";
+  document.getElementById("brandName").textContent = servicesActive ? "Electrotech" : "Electro Group";
+  document.getElementById("brandSubtitle").textContent = servicesActive ? "Services" : "of Industries";
+  document.getElementById("sidebarNoteName").textContent = servicesActive ? "Electrotech Services" : "Electro Group";
+  document.getElementById("sidebarNoteText").textContent = servicesActive ? "Business services" : "Engineering operations";
+  document.getElementById("topbarEyebrow").textContent = servicesActive ? "ELECTROTECH SERVICES" : "ELECTRO GROUP OF INDUSTRIES";
+  document.title = servicesActive ? "Electrotech Services — Automation" : "Electro Group of Industries — Operations & Automation";
 }
 
 function saveHistoryState(screen, material = activeMaterial, replace = false) {
   const state = {
     app: APP_HISTORY_KEY,
     screen,
-    material: ["material", "dashboard", "reports", "records"].includes(screen) ? null : material,
+    material: ["material", "dashboard", "reports", "records", "offers", "offerRecords"].includes(screen) ? null : material,
     index: replace ? currentHistoryIndex : currentHistoryIndex + 1
   };
 
@@ -332,6 +365,10 @@ function toggleCalibrationNav() {
   document.querySelector('[data-nav-group="calibration"]').classList.toggle("open");
 }
 
+function toggleOfferNav() {
+  document.querySelector('[data-nav-group="offers"]').classList.toggle("open");
+}
+
 function openHeaterModule() {
   navigateTo("material", null);
 }
@@ -352,6 +389,23 @@ async function openReportBuilder() {
 
 function openReportRecords() {
   navigateTo("records", null);
+}
+
+async function openOfferBuilder() {
+  editingOfferId = null;
+  navigateTo("offers", null);
+  resetOfferForm();
+  const provisionalNumber = offerField("offerNo").value;
+  await syncOffersFromSheet();
+  if (currentScreen === "offers" && !editingOfferId && offerField("offerNo").value === provisionalNumber) {
+    offerField("offerNo").value = "";
+    ensureOfferDefaults();
+    renderOfferPreview();
+  }
+}
+
+function openOfferRecords() {
+  navigateTo("offerRecords", null);
 }
 
 /* =========================================================
@@ -1401,6 +1455,7 @@ function refreshDashboardMetrics() {
   document.getElementById("dashboardPassedReports").textContent = passed;
   document.getElementById("dashboardDueSoon").textContent = dueSoon;
   document.getElementById("dashboardHeaterRuns").textContent = getHeaterCalculationCount();
+  document.getElementById("dashboardOfferLetters").textContent = offerLetters.length;
 
   const recentList = document.getElementById("dashboardRecentReports");
   const recent = calibrationReports.slice(0, 5);
@@ -1639,6 +1694,8 @@ function exportReportsCsv() {
 
 function printCalibrationReport() {
   renderCalibrationPreview();
+  document.body.classList.remove("print-offer");
+  document.body.classList.add("print-calibration");
   window.print();
 }
 
@@ -1661,4 +1718,251 @@ function setupCalibrationAutomation() {
   renderCalibrationPreview();
 }
 
+/* =========================================================
+   OFFER LETTER AUTOMATION
+========================================================= */
+
+function offerField(name) {
+  return document.querySelector(`[data-offer-field="${name}"]`);
+}
+
+function loadLocalOffers() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(OFFER_STORAGE_KEY) || "[]");
+    offerLetters = Array.isArray(saved) ? saved : [];
+  } catch (_error) {
+    offerLetters = [];
+  }
+  return offerLetters;
+}
+
+function persistLocalOffers() {
+  localStorage.setItem(OFFER_STORAGE_KEY, JSON.stringify(offerLetters));
+}
+
+function extractOfferSequence(offerNumber) {
+  const match = String(offerNumber || "").match(/ETS\/OFR\/(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function readOfferSequenceState() {
+  try {
+    const value = JSON.parse(localStorage.getItem(OFFER_SEQUENCE_KEY) || "null");
+    return value && Number.isFinite(Number(value.sequence)) ? value : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function rememberOfferSequence(offerNumber, updatedAt = new Date().toISOString()) {
+  const sequence = extractOfferSequence(offerNumber);
+  if (Number.isFinite(sequence)) {
+    localStorage.setItem(OFFER_SEQUENCE_KEY, JSON.stringify({ sequence, updatedAt }));
+  }
+}
+
+function nextOfferSequence() {
+  loadLocalOffers();
+  const state = readOfferSequenceState();
+  const highest = offerLetters.reduce((max, offer) => Math.max(max, extractOfferSequence(offer.offerNo) || 0), 0);
+  return Math.max(Number(state?.sequence) || 0, highest) + 1;
+}
+
+async function syncOffersFromSheet() {
+  try {
+    const response = await sheetsApiRequest("listOffers");
+    if (!Array.isArray(response.data)) return;
+    const combined = new Map(offerLetters.map((offer) => [offer.id, offer]));
+    response.data.forEach((remoteOffer) => {
+      const localOffer = combined.get(remoteOffer.id);
+      if (!localOffer || String(remoteOffer.updatedAt || "") > String(localOffer.updatedAt || "")) {
+        combined.set(remoteOffer.id, remoteOffer);
+      }
+    });
+    offerLetters = Array.from(combined.values()).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    persistLocalOffers();
+    const newestOffer = offerLetters[0];
+    const sequenceState = readOfferSequenceState();
+    if (newestOffer && (!sequenceState || String(newestOffer.updatedAt || "") > String(sequenceState.updatedAt || ""))) {
+      rememberOfferSequence(newestOffer.offerNo, newestOffer.updatedAt);
+    }
+    if (currentScreen === "offerRecords") renderOfferRecords();
+    if (currentScreen === "dashboard") refreshDashboardMetrics();
+  } catch (_error) {
+    console.info("Shared offer-letter register is waiting for the updated Apps Script deployment.");
+  }
+}
+
+function ensureOfferDefaults() {
+  if (!document.getElementById("offerForm")) return;
+  const today = new Date();
+  if (!offerField("offerDate").value) offerField("offerDate").value = toInputDate(today);
+  if (!offerField("offerNo").value) {
+    const sequence = String(nextOfferSequence()).padStart(3, "0");
+    offerField("offerNo").value = `ETS/OFR/${sequence}/${getFinancialYearCode(today)}`;
+  }
+}
+
+function collectOfferData() {
+  const offer = {};
+  document.querySelectorAll("[data-offer-field]").forEach((field) => {
+    offer[field.dataset.offerField] = field.value.trim();
+  });
+  offer.documents = String(offer.documents || "").split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+  offer.status = "Confirmed";
+  offer.id = editingOfferId || `OFFER-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  offer.confirmedAt = new Date().toISOString();
+  offer.updatedAt = offer.confirmedAt;
+  return offer;
+}
+
+function setOfferFormData(offer) {
+  editingOfferId = offer.id;
+  document.querySelectorAll("[data-offer-field]").forEach((field) => {
+    const value = offer[field.dataset.offerField];
+    if (value !== undefined) field.value = Array.isArray(value) ? value.join("\n") : value;
+  });
+  document.getElementById("offerFormTitle").textContent = `Edit ${offer.offerNo}`;
+  renderOfferPreview();
+}
+
+function resetOfferForm() {
+  editingOfferId = null;
+  const form = document.getElementById("offerForm");
+  form.reset();
+  offerField("offerNo").value = "";
+  offerField("offerDate").value = "";
+  document.getElementById("offerFormTitle").textContent = "New offer letter";
+  ensureOfferDefaults();
+  renderOfferPreview();
+}
+
+function validateOfferLetter(offer) {
+  if (!offer.offerNo || !offer.offerDate || !offer.candidateName || !offer.interviewDate || !offer.designation || !offer.joiningDate) {
+    return "Complete the candidate name, designation, offer date, interview date and joining date.";
+  }
+  if (!offer.documents.length) return "Add at least one document to carry.";
+  return "";
+}
+
+function renderOfferPreview() {
+  const preview = document.getElementById("offerPreview");
+  if (!preview) return;
+  const data = collectOfferData();
+  const documents = data.documents.length ? data.documents : ["Required documents"];
+  const months = Number(data.probationMonths || 0);
+  const probationText = months > 0
+    ? `You will be on a fixed probation period of ${escapeHtml(String(months))} (${escapeHtml(numberWord(months))}) months. `
+    : "";
+  preview.innerHTML = `
+    <div class="offer-top-rule"></div>
+    <div class="offer-letterhead"><img src="assets/electrotech-services-logo.png" alt="Electrotech Services"><div>${escapeHtml(data.officeAddress || "Office address")}</div></div>
+    <div class="offer-title">OFFER LETTER</div>
+    <div class="offer-date"><span>Date:</span><strong>${formatOfferDate(data.offerDate)}</strong></div>
+    <p>Dear <strong>${escapeHtml((data.candidateName || "Candidate name").toUpperCase())},</strong></p>
+    <p>With reference to your personal interview held on ${formatOfferDate(data.interviewDate)}, we are pleased to inform you that you have been selected for employment with ${escapeHtml(data.companyName || "Electrotech Services")}, ${escapeHtml(data.workLocation || "Baikampady")}.</p>
+    <h3 class="offer-section-title">APPOINTMENT DETAILS</h3>
+    <table class="offer-appointment"><thead><tr><th>DESIGNATION</th><th>DATE OF JOINING</th></tr></thead><tbody><tr><td>${escapeHtml((data.designation || "Designation").toUpperCase())}</td><td>${formatOfferDate(data.joiningDate)}</td></tr></tbody></table>
+    <p>You are requested to report for duty on the date mentioned above.</p>
+    <h3 class="offer-section-title">DOCUMENTS TO CARRY</h3>
+    <ul>${documents.map((documentName) => `<li>${escapeHtml(documentName)}</li>`).join("")}</ul>
+    <h3 class="offer-section-title">PROBATION &amp; BENEFITS</h3>
+    <p>${probationText}${escapeHtml(data.benefitsText || "")}</p>
+    <p>${escapeHtml(data.welcomeText || "")}</p>
+    <div class="offer-signature"><strong>For ${escapeHtml((data.companyName || "ELECTROTECH SERVICES").toUpperCase())}</strong><span>Authorised Name: <b>${escapeHtml((data.authorisedName || "—").toUpperCase())}</b></span></div>
+    <div class="offer-bottom-rule"></div>`;
+}
+
+function numberWord(value) {
+  const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+  return words[value] || String(value);
+}
+
+function formatOfferDate(value) {
+  if (!value) return "—";
+  const [year, month, day] = String(value).split("-");
+  return year && month && day ? `${day}-${month}-${year.slice(-2)}` : escapeHtml(value);
+}
+
+async function confirmOfferLetter() {
+  const offer = collectOfferData();
+  const validationError = validateOfferLetter(offer);
+  if (validationError) {
+    showSaveModal("Check offer letter", validationError);
+    return;
+  }
+  loadLocalOffers();
+  const existingIndex = offerLetters.findIndex((item) => item.id === offer.id);
+  if (existingIndex >= 0) offerLetters[existingIndex] = offer;
+  else offerLetters.unshift(offer);
+  rememberOfferSequence(offer.offerNo, offer.updatedAt);
+  persistLocalOffers();
+  editingOfferId = offer.id;
+  document.getElementById("offerFormTitle").textContent = `Edit ${offer.offerNo}`;
+  refreshDashboardMetrics();
+  try {
+    await sheetsApiRequest("saveOffer", { offer });
+    showSaveModal("Offer confirmed", `${offer.offerNo} for ${offer.candidateName} is stored in the separate offer_letters Google Sheet.`);
+  } catch (error) {
+    console.warn(error);
+    showSaveModal("Offer saved locally", `${offer.offerNo} is available in this browser. Deploy the updated Google Apps Script to sync it to the separate offer_letters sheet.`);
+  }
+}
+
+function editOfferLetter(id) {
+  loadLocalOffers();
+  const offer = offerLetters.find((item) => item.id === id);
+  if (!offer) return;
+  navigateTo("offers", null, { keepDraft: true });
+  setOfferFormData(offer);
+}
+
+function renderOfferRecords() {
+  const table = document.getElementById("offerRecordsTable");
+  if (!table) return;
+  const search = (document.getElementById("offerRecordsSearch")?.value || "").toLowerCase().trim();
+  const filtered = offerLetters.filter((offer) => [offer.offerNo, offer.candidateName, offer.designation, offer.workLocation].join(" ").toLowerCase().includes(search));
+  document.getElementById("offerRecordCount").textContent = `${filtered.length} offer${filtered.length === 1 ? "" : "s"}`;
+  table.innerHTML = `<thead><tr><th>Offer no.</th><th>Candidate</th><th>Designation</th><th>Offer date</th><th>Joining date</th><th>Status</th><th>Actions</th></tr></thead><tbody>${filtered.length ? filtered.map((offer) => `<tr><td>${escapeHtml(offer.offerNo)}</td><td>${escapeHtml(offer.candidateName)}</td><td>${escapeHtml(offer.designation)}</td><td>${formatReportDate(offer.offerDate)}</td><td>${formatReportDate(offer.joiningDate)}</td><td><span class="status-pill status-pill--ok">${escapeHtml(offer.status || "Confirmed")}</span></td><td><div class="record-actions"><button onclick="editOfferLetter('${escapeHtml(offer.id)}')">View / edit</button></div></td></tr>`).join("") : `<tr><td colspan="7" class="empty-state">No confirmed offers yet. Create and confirm the first offer letter to start the register.</td></tr>`}</tbody>`;
+}
+
+function exportOffersCsv() {
+  loadLocalOffers();
+  if (!offerLetters.length) {
+    showSaveModal("Nothing to export", "Create and confirm at least one offer letter first.");
+    return;
+  }
+  const headers = ["Offer No", "Offer Date", "Candidate Name", "Interview Date", "Designation", "Joining Date", "Company", "Work Location", "Office Address", "Probation Months", "Documents", "Benefits", "Closing Message", "Authorised Name", "Status", "Confirmed At", "Updated At"];
+  const lines = [headers.map(csvCell).join(",")];
+  offerLetters.forEach((offer) => lines.push([
+    offer.offerNo, offer.offerDate, offer.candidateName, offer.interviewDate, offer.designation,
+    offer.joiningDate, offer.companyName, offer.workLocation, offer.officeAddress, offer.probationMonths,
+    (offer.documents || []).join(" | "), offer.benefitsText, offer.welcomeText, offer.authorisedName,
+    offer.status, offer.confirmedAt, offer.updatedAt
+  ].map(csvCell).join(",")));
+  const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Electrotech_Services_Offer_Letters_${toInputDate(new Date())}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function printOfferLetter() {
+  renderOfferPreview();
+  document.body.classList.remove("print-calibration");
+  document.body.classList.add("print-offer");
+  window.print();
+}
+
+function setupOfferAutomation() {
+  loadLocalOffers();
+  ensureOfferDefaults();
+  document.getElementById("offerForm").addEventListener("input", renderOfferPreview);
+  document.getElementById("offerRecordsSearch").addEventListener("input", renderOfferRecords);
+  window.addEventListener("afterprint", () => document.body.classList.remove("print-calibration", "print-offer"));
+  renderOfferPreview();
+}
+
 setupCalibrationAutomation();
+setupOfferAutomation();

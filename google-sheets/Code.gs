@@ -11,6 +11,11 @@ const REPORT_HEADERS = [
   "id", "report_no", "page_no", "cal_on", "cal_due", "customer_name",
   "device", "serial_no", "equipment", "location", "status", "payload_json", "updated_at"
 ];
+const OFFER_SHEET = "offer_letters";
+const OFFER_HEADERS = [
+  "id", "offer_no", "candidate_name", "designation", "offer_date",
+  "joining_date", "status", "payload_json", "confirmed_at", "updated_at"
+];
 const SPREADSHEET_ID = "1fuzplqthrPBaIbyuaGIOg_n1Z8XnSSdimjJjArl76So";
 const ADMIN_PASSWORD = "CHANGE_THIS_TO_YOUR_PASSWORD";
 
@@ -20,6 +25,10 @@ function doGet(event) {
 
     if (action === "listReports") {
       return json_({ ok: true, data: listReports_() });
+    }
+
+    if (action === "listOffers") {
+      return json_({ ok: true, data: listOffers_() });
     }
 
     if (action !== "read") throw new Error("Unsupported request.");
@@ -52,6 +61,12 @@ function doPost(event) {
       const report = validateReport_(body.report);
       saveReport_(report);
       return json_({ ok: true, id: report.id, reportNo: report.reportNo });
+    }
+
+    if (body.action === "saveOffer") {
+      const offer = validateOffer_(body.offer);
+      saveOffer_(offer);
+      return json_({ ok: true, id: offer.id, offerNo: offer.offerNo });
     }
 
     throw new Error("Unsupported request.");
@@ -135,6 +150,83 @@ function formatReportSheet_(sheet) {
   sheet.getRange("D:E").setNumberFormat("yyyy-mm-dd");
   sheet.autoResizeColumns(1, REPORT_HEADERS.length);
   sheet.setColumnWidth(12, 420);
+}
+
+function getOfferSheet_() {
+  const spreadsheet = getSpreadsheet_();
+  let sheet = spreadsheet.getSheetByName(OFFER_SHEET);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(OFFER_SHEET);
+    sheet.getRange(1, 1, 1, OFFER_HEADERS.length).setValues([OFFER_HEADERS]);
+    formatOfferSheet_(sheet);
+  }
+  return sheet;
+}
+
+function listOffers_() {
+  const sheet = getOfferSheet_();
+  if (sheet.getLastRow() < 2) return [];
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, OFFER_HEADERS.length).getValues()
+    .filter(function (row) { return row[0] !== ""; })
+    .map(function (row) {
+      try { return JSON.parse(String(row[7] || "{}")); }
+      catch (_error) { return null; }
+    })
+    .filter(function (offer) { return offer && offer.id; })
+    .sort(function (a, b) { return String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")); });
+}
+
+function saveOffer_(offer) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = getOfferSheet_();
+    const lastRow = sheet.getLastRow();
+    let targetRow = lastRow + 1;
+    if (lastRow >= 2) {
+      const ids = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+      for (let index = 0; index < ids.length; index++) {
+        if (String(ids[index][0]) === offer.id) {
+          targetRow = index + 2;
+          break;
+        }
+      }
+    }
+    const values = [[
+      offer.id, offer.offerNo, offer.candidateName, offer.designation, offer.offerDate,
+      offer.joiningDate, offer.status, JSON.stringify(offer), offer.confirmedAt, offer.updatedAt
+    ]];
+    sheet.getRange(targetRow, 1, 1, OFFER_HEADERS.length).setValues(values);
+    formatOfferSheet_(sheet);
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function validateOffer_(source) {
+  if (!source || typeof source !== "object") throw new Error("Offer letter is missing.");
+  const offer = JSON.parse(JSON.stringify(source));
+  ["id", "offerNo", "candidateName", "designation", "offerDate", "interviewDate", "joiningDate", "confirmedAt", "updatedAt"].forEach(function (field) {
+    if (!String(offer[field] || "").trim()) throw new Error("Missing offer field: " + field);
+  });
+  if (!Array.isArray(offer.documents) || offer.documents.length === 0 || offer.documents.length > 50) {
+    throw new Error("Offer document list is missing or invalid.");
+  }
+  if (JSON.stringify(offer).length > 45000) throw new Error("Offer letter is too large.");
+  offer.status = "Confirmed";
+  return offer;
+}
+
+function formatOfferSheet_(sheet) {
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, OFFER_HEADERS.length)
+    .setFontWeight("bold")
+    .setBackground("#29277e")
+    .setFontColor("#ffffff");
+  sheet.getRange("E:F").setNumberFormat("yyyy-mm-dd");
+  sheet.autoResizeColumns(1, OFFER_HEADERS.length);
+  sheet.setColumnWidth(8, 420);
 }
 
 function readTable_(tableName) {
