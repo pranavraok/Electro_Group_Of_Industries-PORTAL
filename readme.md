@@ -23,12 +23,16 @@ A browser-based engineering and calibration workflow for ELECTRO GROUP OF INDUST
 - Live A4 offer preview, browser PDF printing, confirmation workflow, and searchable offer register
 - Confirmed offers synchronized to a separate `offer_letters` Google Sheet tab
 - Electro Group red-and-white logo branding and favicon
+- Installable app experience for supported desktop and mobile browsers
+- Offline app shell for reliable access after the first successful visit
 
 ## Run the app
 
 1. Complete [google-sheets/README.md](google-sheets/README.md).
 2. Paste the deployed Google Apps Script `/exec` URL into `GOOGLE_SHEETS_WEB_APP_URL` in `script.js`.
-3. Open `index.html` in a browser or publish these static files with any web host.
+3. Publish these static files over HTTPS to enable app installation. For local testing, serve the folder from `localhost` rather than opening `index.html` directly.
+
+Once hosted, use the **Install app** button in the top bar. Chrome and Edge can show a native install prompt; iPhone, iPad and Safari users receive the correct Add to Home Screen or Add to Dock steps.
 
 No Supabase account, SDK, or database is used.
 

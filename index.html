@@ -1,295 +1,778 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#d90019">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Electro Ops">
+  <meta name="description"
+    content="Electro Group engineering operations, winding calculations, calibration reports and HR records.">
   <title>Electro Group of Industries — Operations & Automation</title>
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="assets/electro-group-logo.png">
-  <link rel="apple-touch-icon" href="assets/electro-group-logo.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/app-icon-192.png">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="portal-shell">
     <aside class="sidebar">
-      <div class="brand"><img id="brandLogo" class="brand-logo" src="assets/electro-group-logo.png" alt="Electro Group of Industries logo"><div><strong id="brandName">Electro Group</strong><small id="brandSubtitle">of Industries</small></div><button class="sidebar-close" type="button" onclick="closeMobileSidebar()" aria-label="Close menu">×</button></div>
+      <div class="brand"><img id="brandLogo" class="brand-logo" src="assets/electro-group-logo.png"
+          alt="Electro Group of Industries logo">
+        <div><strong id="brandName">Electro Group</strong><small id="brandSubtitle">of Industries</small></div><button
+          class="sidebar-close" type="button" onclick="closeMobileSidebar()" aria-label="Close menu">×</button>
+      </div>
       <nav class="portal-nav" aria-label="Main navigation">
-        <button class="nav-btn active" data-screen="dashboard" onclick="openDashboard()"><span>01</span>Overview</button>
-        <button class="nav-btn" data-screen="material" onclick="openHeaterModule()"><span>02</span>Heater calculator</button>
+        <button class="nav-btn active" data-screen="dashboard"
+          onclick="openDashboard()"><span>01</span>Overview</button>
+        <button class="nav-btn" data-screen="material" onclick="openHeaterModule()"><span>02</span>Heater
+          calculator</button>
         <div class="nav-group" data-nav-group="calibration">
-          <button class="nav-btn nav-group-toggle" type="button" onclick="toggleCalibrationNav()"><span>03</span>Calibration <b aria-hidden="true">⌄</b></button>
+          <button class="nav-btn nav-group-toggle" type="button"
+            onclick="toggleCalibrationNav()"><span>03</span>Calibration <b aria-hidden="true">⌄</b></button>
           <div class="nav-submenu">
             <button class="nav-subbtn" data-screen="reports" onclick="openReportBuilder()">New calibration</button>
             <button class="nav-subbtn" data-screen="records" onclick="openReportRecords()">Calibration records</button>
-            <button class="nav-subbtn" data-screen="performanceReports" onclick="openPerformanceReportBuilder()">New performance</button>
-            <button class="nav-subbtn" data-screen="performanceRecords" onclick="openPerformanceReportRecords()">Performance records</button>
+            <button class="nav-subbtn" data-screen="performanceReports" onclick="openPerformanceReportBuilder()">New
+              performance</button>
+            <button class="nav-subbtn" data-screen="performanceRecords"
+              onclick="openPerformanceReportRecords()">Performance records</button>
           </div>
         </div>
         <div class="nav-group" data-nav-group="hrLetters">
-          <button class="nav-btn nav-group-toggle" type="button" onclick="toggleHrLettersNav()"><span>04</span>HR letters <b aria-hidden="true">⌄</b></button>
+          <button class="nav-btn nav-group-toggle" type="button" onclick="toggleHrLettersNav()"><span>04</span>HR
+            letters <b aria-hidden="true">⌄</b></button>
           <div class="nav-submenu">
             <div class="nav-subsection-title">Offer letters</div>
             <button class="nav-subbtn" data-screen="offers" onclick="openOfferBuilder()">New offer</button>
             <button class="nav-subbtn" data-screen="offerRecords" onclick="openOfferRecords()">Offer records</button>
             <div class="nav-subsection-title">Appointment letters</div>
-            <button class="nav-subbtn" data-screen="appointments" onclick="openAppointmentBuilder()">New appointment</button>
-            <button class="nav-subbtn" data-screen="appointmentRecords" onclick="openAppointmentRecords()">Appointment records</button>
+            <button class="nav-subbtn" data-screen="appointments" onclick="openAppointmentBuilder()">New
+              appointment</button>
+            <button class="nav-subbtn" data-screen="appointmentRecords" onclick="openAppointmentRecords()">Appointment
+              records</button>
           </div>
         </div>
       </nav>
-      <div class="sidebar-note"><strong id="sidebarNoteName">Electro Group</strong><span id="sidebarNoteText">Engineering operations</span></div>
+      <div class="sidebar-note"><strong id="sidebarNoteName">Electro Group</strong><span
+          id="sidebarNoteText">Engineering operations</span></div>
     </aside>
-    <button id="sidebarOverlay" class="sidebar-overlay" type="button" onclick="closeMobileSidebar()" aria-label="Close menu"></button>
+    <button id="sidebarOverlay" class="sidebar-overlay" type="button" onclick="closeMobileSidebar()"
+      aria-label="Close menu"></button>
 
     <div class="portal-main">
       <header class="topbar">
-        <button class="mobile-menu-button" type="button" onclick="toggleMobileSidebar()" aria-label="Open menu"><span></span><span></span><span></span></button>
-        <div><p id="topbarEyebrow" class="eyebrow">ELECTRO GROUP OF INDUSTRIES</p><h1 id="pageTitle">Operations & Automation</h1></div>
-        <div class="topbar-actions"><span class="system-status"><i></i>System ready</span></div>
+        <button class="mobile-menu-button" type="button" onclick="toggleMobileSidebar()"
+          aria-label="Open menu"><span></span><span></span><span></span></button>
+        <div class="topbar-title">
+          <p id="topbarEyebrow" class="eyebrow">ELECTRO GROUP OF INDUSTRIES</p>
+          <h1 id="pageTitle">Operations & Automation</h1>
+        </div>
+        <div class="topbar-actions">
+          <button id="installAppButton" class="install-app-button" type="button" onclick="installApp()"
+            aria-label="Install app" aria-haspopup="dialog" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 15v4h14v-4" />
+            </svg>
+            <span class="install-label-full">Install app</span><span class="install-label-short"
+              aria-hidden="true">Install</span>
+          </button>
+          <span class="system-status"><i></i>System ready</span>
+        </div>
       </header>
 
       <main class="workspace">
         <section id="dashboard" class="app-view">
-          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div></div>
+          <div class="overview-heading">
+            <div><span class="section-kicker">OVERVIEW</span>
+              <h2>Operations dashboard</h2>
+            </div>
+          </div>
           <div class="metric-grid">
-            <article class="metric-card"><span>Total reports</span><strong id="dashboardTotalReports">0</strong><small>Calibration records</small></article>
-            <article class="metric-card"><span>Passed</span><strong id="dashboardPassedReports">0</strong><small>Reports within limit</small></article>
-            <article class="metric-card"><span>Due soon</span><strong id="dashboardDueSoon">0</strong><small>Next 30 days</small></article>
-            <article class="metric-card"><span>Heater runs</span><strong id="dashboardHeaterRuns">0</strong><small>Completed calculations</small></article>
-            <article class="metric-card"><span>Offer letters</span><strong id="dashboardOfferLetters">0</strong><small>Confirmed records</small></article>
-            <article class="metric-card"><span>Appointment letters</span><strong id="dashboardAppointmentLetters">0</strong><small>Issued records</small></article>
-            <article class="metric-card"><span>Performance</span><strong id="dashboardPerformanceReports">0</strong><small>Equipment reports</small></article>
+            <article class="metric-card"><span>Total reports</span><strong
+                id="dashboardTotalReports">0</strong><small>Calibration records</small></article>
+            <article class="metric-card"><span>Passed</span><strong id="dashboardPassedReports">0</strong><small>Reports
+                within limit</small></article>
+            <article class="metric-card"><span>Due soon</span><strong id="dashboardDueSoon">0</strong><small>Next 30
+                days</small></article>
+            <article class="metric-card"><span>Heater runs</span><strong
+                id="dashboardHeaterRuns">0</strong><small>Completed calculations</small></article>
+            <article class="metric-card"><span>Offer letters</span><strong
+                id="dashboardOfferLetters">0</strong><small>Confirmed records</small></article>
+            <article class="metric-card"><span>Appointment letters</span><strong
+                id="dashboardAppointmentLetters">0</strong><small>Issued records</small></article>
+            <article class="metric-card"><span>Performance</span><strong
+                id="dashboardPerformanceReports">0</strong><small>Equipment reports</small></article>
           </div>
           <div class="dashboard-grid">
-            <article class="recent-card"><div class="card-heading"><div><h3>Recent reports</h3><small>Latest calibration records</small></div><button class="text-action" onclick="openReportRecords()">View all</button></div><div id="dashboardRecentReports" class="recent-list"></div></article>
-            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true"><h3>Quick actions</h3><button onclick="openReportBuilder()">New calibration <span>→</span></button><button onclick="openPerformanceReportBuilder()">New performance <span>→</span></button><button onclick="openOfferBuilder()">New offer letter <span>→</span></button><button onclick="openAppointmentBuilder()">New appointment letter <span>→</span></button><button onclick="openHeaterModule()">Heater calculator <span>→</span></button><button onclick="openReportRecords()">Calibration records <span>→</span></button><button onclick="openPerformanceReportRecords()">Performance records <span>→</span></button><button onclick="openOfferRecords()">Offer records <span>→</span></button><button onclick="openAppointmentRecords()">Appointment records <span>→</span></button></article>
+            <article class="recent-card">
+              <div class="card-heading">
+                <div>
+                  <h3>Recent reports</h3><small>Latest calibration records</small>
+                </div><button class="text-action" onclick="openReportRecords()">View all</button>
+              </div>
+              <div id="dashboardRecentReports" class="recent-list"></div>
+            </article>
+            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true">
+              <h3>Quick actions</h3><button onclick="openReportBuilder()">New calibration <span>→</span></button><button
+                onclick="openPerformanceReportBuilder()">New performance <span>→</span></button><button
+                onclick="openOfferBuilder()">New offer letter <span>→</span></button><button
+                onclick="openAppointmentBuilder()">New appointment letter <span>→</span></button><button
+                onclick="openHeaterModule()">Heater calculator <span>→</span></button><button
+                onclick="openReportRecords()">Calibration records <span>→</span></button><button
+                onclick="openPerformanceReportRecords()">Performance records <span>→</span></button><button
+                onclick="openOfferRecords()">Offer records <span>→</span></button><button
+                onclick="openAppointmentRecords()">Appointment records <span>→</span></button>
+            </article>
           </div>
         </section>
 
         <section id="materialSelect" class="panel app-view hidden">
-          <div class="section-heading"><div><span class="section-kicker">HEATER DESIGN</span><h2>Select wire material</h2><p>The calculation database and engineering rules will load for the selected material.</p></div></div>
-          <div class="choice-grid"><button class="choice-btn" onclick="selectMaterial('nichrome')"><strong>Nichrome</strong><span>High resistance alloy</span></button><button class="choice-btn" onclick="selectMaterial('kanthal')"><strong>Kanthal D</strong><span>Iron-chromium-aluminium alloy</span></button></div>
+          <div class="section-heading">
+            <div><span class="section-kicker">HEATER DESIGN</span>
+              <h2>Select wire material</h2>
+              <p>The calculation database and engineering rules will load for the selected material.</p>
+            </div>
+          </div>
+          <div class="choice-grid"><button class="choice-btn"
+              onclick="selectMaterial('nichrome')"><strong>Nichrome</strong><span>High resistance
+                alloy</span></button><button class="choice-btn" onclick="selectMaterial('kanthal')"><strong>Kanthal
+                D</strong><span>Iron-chromium-aluminium alloy</span></button></div>
         </section>
 
         <section id="landing" class="panel hidden">
-          <div class="material-bar"><span id="materialLabel"></span><button class="back-btn" onclick="backToMaterial()">Change material</button></div>
-          <div class="choice-grid"><button class="choice-btn" onclick="openCalculator()"><strong>Calculate winding</strong><span>Run the complete design calculation</span></button><button class="choice-btn" onclick="openPassword()"><strong>Edit wire database</strong><span>Update spreadsheet-backed gauge data</span></button></div>
+          <div class="material-bar"><span id="materialLabel"></span><button class="back-btn"
+              onclick="backToMaterial()">Change material</button></div>
+          <div class="choice-grid"><button class="choice-btn" onclick="openCalculator()"><strong>Calculate
+                winding</strong><span>Run the complete design calculation</span></button><button class="choice-btn"
+              onclick="openPassword()"><strong>Edit wire database</strong><span>Update spreadsheet-backed gauge
+                data</span></button></div>
         </section>
 
         <section id="calculator" class="panel hidden">
-          <div class="material-bar"><span id="materialLabelCalc"></span><button class="back-btn" onclick="backToLanding()">Back</button></div>
-          <div class="section-heading compact"><div><span class="section-kicker">WINDING INPUTS</span><h2>Heater coil calculation</h2></div></div>
-          <div class="form">
-            <div class="form-field"><label>Wattage (W)</label><input id="wattage" type="number" inputmode="decimal" placeholder="Enter wattage"></div>
-            <div class="form-field"><label>Voltage (V)</label><input id="voltage" type="number" inputmode="decimal" placeholder="Enter voltage"></div>
-            <div class="form-field"><label>Heater OD (mm)</label><input id="heaterOD" type="number" inputmode="decimal" placeholder="Enter heater diameter"></div>
-            <div class="form-field"><label>Heater length (mm)</label><input id="heaterLength" type="number" inputmode="decimal" placeholder="Total heater length"></div>
-            <div class="form-field"><label>Core length (mm)</label><input id="coreLength" type="number" inputmode="decimal" placeholder="Winding length"></div>
-            <div class="form-field"><label>Pipe thickness (mm)</label><div class="field-inline"><input id="pipeThickness" type="number" inputmode="decimal" step="0.1" placeholder="Auto"><label class="switch"><input type="checkbox" id="autoThickness" checked onchange="toggleAutoThickness()"> Auto</label></div></div>
-            <div class="form-field"><label>Pipe OD (mm)</label><div class="field-inline"><input id="pipeOD" type="number" inputmode="decimal" step="0.1" placeholder="Auto"><label class="switch"><input type="checkbox" id="autoPipeOD" checked onchange="toggleAutoPipeOD()"> Auto</label></div></div>
-            <div class="form-field form-field--wide"><label>Core OD (mm)</label><div class="field-inline"><input id="coreOD" type="number" inputmode="decimal" step="0.1" placeholder="Auto"><label class="switch"><input type="checkbox" id="autoCoreOD" checked onchange="toggleAutoCoreOD()"> Auto</label></div><div id="coreODStatus" class="core-od-status"></div></div>
-            <div class="form-field"><label>Extra resistance (%)</label><input id="extra" type="number" inputmode="decimal" value="0"></div>
+          <div class="material-bar"><span id="materialLabelCalc"></span><button class="back-btn"
+              onclick="backToLanding()">Back</button></div>
+          <div class="section-heading compact">
+            <div><span class="section-kicker">WINDING INPUTS</span>
+              <h2>Heater coil calculation</h2>
+            </div>
           </div>
-          <button class="primary-action" onclick="calculate()">Calculate winding</button><div id="result"></div>
+          <div class="form">
+            <div class="form-field"><label>Wattage (W)</label><input id="wattage" type="number" inputmode="decimal"
+                placeholder="Enter wattage"></div>
+            <div class="form-field"><label>Voltage (V)</label><input id="voltage" type="number" inputmode="decimal"
+                placeholder="Enter voltage"></div>
+            <div class="form-field"><label>Heater OD (mm)</label><input id="heaterOD" type="number" inputmode="decimal"
+                placeholder="Enter heater diameter"></div>
+            <div class="form-field"><label>Heater length (mm)</label><input id="heaterLength" type="number"
+                inputmode="decimal" placeholder="Total heater length"></div>
+            <div class="form-field"><label>Core length (mm)</label><input id="coreLength" type="number"
+                inputmode="decimal" placeholder="Winding length"></div>
+            <div class="form-field"><label>Pipe thickness (mm)</label>
+              <div class="field-inline"><input id="pipeThickness" type="number" inputmode="decimal" step="0.1"
+                  placeholder="Auto"><label class="switch"><input type="checkbox" id="autoThickness" checked
+                    onchange="toggleAutoThickness()"> Auto</label></div>
+            </div>
+            <div class="form-field"><label>Pipe OD (mm)</label>
+              <div class="field-inline"><input id="pipeOD" type="number" inputmode="decimal" step="0.1"
+                  placeholder="Auto"><label class="switch"><input type="checkbox" id="autoPipeOD" checked
+                    onchange="toggleAutoPipeOD()"> Auto</label></div>
+            </div>
+            <div class="form-field form-field--wide"><label>Core OD (mm)</label>
+              <div class="field-inline"><input id="coreOD" type="number" inputmode="decimal" step="0.1"
+                  placeholder="Auto"><label class="switch"><input type="checkbox" id="autoCoreOD" checked
+                    onchange="toggleAutoCoreOD()"> Auto</label></div>
+              <div id="coreODStatus" class="core-od-status"></div>
+            </div>
+            <div class="form-field"><label>Extra resistance (%)</label><input id="extra" type="number"
+                inputmode="decimal" value="0"></div>
+          </div>
+          <button class="primary-action" onclick="calculate()">Calculate winding</button>
+          <div id="result"></div>
         </section>
 
         <section id="reportBuilder" class="hidden">
-          <div class="report-toolbar"><div><span class="section-kicker">CALIBRATION AUTOMATION</span><h2 id="reportFormTitle">New calibration report</h2><p>Blue fields are auto-filled. Every business value remains editable.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="resetReportForm()">New report</button><button class="ghost-btn" onclick="printCalibrationReport()">Print / PDF</button><button class="primary-action" onclick="saveCalibrationReport()">Save report</button></div></div>
+          <div class="report-toolbar">
+            <div><span class="section-kicker">CALIBRATION AUTOMATION</span>
+              <h2 id="reportFormTitle">New calibration report</h2>
+              <p>Blue fields are auto-filled. Every business value remains editable.</p>
+            </div>
+            <div class="toolbar-actions"><button class="ghost-btn" onclick="resetReportForm()">New
+                report</button><button class="ghost-btn" onclick="printCalibrationReport()">Print / PDF</button><button
+                class="primary-action" onclick="saveCalibrationReport()">Save report</button></div>
+          </div>
           <div class="report-workspace">
             <form id="calibrationForm" class="report-form" onsubmit="return false">
               <div class="form-section">
-                <div class="form-section-title"><span>01</span><div><h3>Report control</h3><p>Generated automatically, but editable when required.</p></div></div>
-                <div class="report-field-grid four"><div class="form-field auto-field"><label>Calibration report no.</label><input data-report-field="reportNo" required></div><div class="form-field auto-field"><label>Calibration on</label><input data-report-field="calOn" type="date" required></div><div class="form-field auto-field"><label>Calibration due</label><input data-report-field="calDue" type="date" required></div><div class="form-field auto-field"><label>Page no.</label><input data-report-field="pageNo" required readonly title="Automatically follows the report number"></div></div>
-              </div>
-              <div class="form-section">
-                <div class="form-section-title"><span>02</span><div><h3>Customer & equipment</h3><p>Values that change for each certificate.</p></div></div>
-                <div class="report-field-grid two">
-                  <div class="form-field"><label>Customer name</label><input data-report-field="customerName" list="customerDirectoryList" required placeholder="M/s. Customer name"><datalist id="customerDirectoryList"></datalist></div><div class="form-field"><label>Customer address</label><textarea data-report-field="customerAddress" rows="3" placeholder="Saved address fills automatically"></textarea></div>
-                  <div class="form-field"><label>Device</label><input data-report-field="device" value="Digital Temperature Controller"></div><div class="form-field"><label>Make</label><input data-report-field="make" value="ELECTROTECH SERVICES"></div>
-                  <div class="form-field"><label>Serial no.</label><input data-report-field="serialNo" placeholder="31GRK317"></div><div class="form-field"><label>Equipment</label><input data-report-field="equipment" placeholder="Hot Chamber 1"></div>
-                  <div class="form-field"><label>Location</label><input data-report-field="location" placeholder="Boiler Area"></div><div class="form-field"><label>Environment condition</label><input data-report-field="environment" placeholder="Normal"></div>
-                  <div class="form-field"><label>Room temperature (°C)</label><input data-report-field="roomTemp" type="number" value="29"></div><div class="form-field"><label>Humidity</label><input data-report-field="humidity" value="55% to 85%"></div>
+                <div class="form-section-title"><span>01</span>
+                  <div>
+                    <h3>Report control</h3>
+                    <p>Generated automatically, but editable when required.</p>
+                  </div>
+                </div>
+                <div class="report-field-grid four">
+                  <div class="form-field auto-field"><label>Calibration report no.</label><input
+                      data-report-field="reportNo" required></div>
+                  <div class="form-field auto-field"><label>Calibration on</label><input data-report-field="calOn"
+                      type="date" required></div>
+                  <div class="form-field auto-field"><label>Calibration due</label><input data-report-field="calDue"
+                      type="date" required></div>
+                  <div class="form-field auto-field"><label>Page no.</label><input data-report-field="pageNo" required
+                      readonly title="Automatically follows the report number"></div>
                 </div>
               </div>
               <div class="form-section">
-                <div class="form-section-title"><span>03</span><div><h3>Calibration readings</h3><p>Observed error and remarks are calculated live.</p></div></div>
-                <div class="reading-meta-grid"><div class="form-field"><label>Sensor / parameter</label><select data-report-field="parameter"><option value="Sensor: PT-100" selected>PT-100</option><option value="Sensor: RTD">RTD</option><option value="Sensor: J Type">J Type</option><option value="Sensor: K Type">K Type</option></select></div><div class="form-field"><label>Range</label><input data-report-field="range" value="0°C - 400°C"></div><div class="form-field auto-field"><label>Claimed error (%)</label><input data-report-field="claimedError" type="number" step="0.1" value="1"></div></div>
-                <div class="reading-table-wrap"><table class="reading-input-table"><thead><tr><th>Sl.</th><th>STD input (°C)</th><th>DUC reading (°C)</th><th>Error observed</th><th>Remarks</th><th>Action</th></tr></thead><tbody id="readingsBody"></tbody></table></div><button class="small-action" type="button" onclick="addReadingRow()">+ Add reading</button>
+                <div class="form-section-title"><span>02</span>
+                  <div>
+                    <h3>Customer & equipment</h3>
+                    <p>Values that change for each certificate.</p>
+                  </div>
+                </div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Customer name</label><input data-report-field="customerName"
+                      list="customerDirectoryList" required placeholder="M/s. Customer name"><datalist
+                      id="customerDirectoryList"></datalist></div>
+                  <div class="form-field"><label>Customer address</label><textarea data-report-field="customerAddress"
+                      rows="3" placeholder="Saved address fills automatically"></textarea></div>
+                  <div class="form-field"><label>Device</label><input data-report-field="device"
+                      value="Digital Temperature Controller"></div>
+                  <div class="form-field"><label>Make</label><input data-report-field="make"
+                      value="ELECTROTECH SERVICES"></div>
+                  <div class="form-field"><label>Serial no.</label><input data-report-field="serialNo"
+                      placeholder="31GRK317"></div>
+                  <div class="form-field"><label>Equipment</label><input data-report-field="equipment"
+                      placeholder="Hot Chamber 1"></div>
+                  <div class="form-field"><label>Location</label><input data-report-field="location"
+                      placeholder="Boiler Area"></div>
+                  <div class="form-field"><label>Environment condition</label><input data-report-field="environment"
+                      placeholder="Normal"></div>
+                  <div class="form-field"><label>Room temperature (°C)</label><input data-report-field="roomTemp"
+                      type="number" value="29"></div>
+                  <div class="form-field"><label>Humidity</label><input data-report-field="humidity" value="55% to 85%">
+                  </div>
+                </div>
               </div>
               <div class="form-section">
-                <div class="form-section-title"><span>04</span><div><h3>Standard & approval</h3><p>Defaults from the supplied report; edit whenever the instrument or approver changes.</p></div></div>
+                <div class="form-section-title"><span>03</span>
+                  <div>
+                    <h3>Calibration readings</h3>
+                    <p>Observed error and remarks are calculated live.</p>
+                  </div>
+                </div>
+                <div class="reading-meta-grid">
+                  <div class="form-field"><label>Sensor / parameter</label><select data-report-field="parameter">
+                      <option value="Sensor: PT-100" selected>PT-100</option>
+                      <option value="Sensor: RTD">RTD</option>
+                      <option value="Sensor: J Type">J Type</option>
+                      <option value="Sensor: K Type">K Type</option>
+                    </select></div>
+                  <div class="form-field"><label>Range</label><input data-report-field="range" value="0°C - 400°C">
+                  </div>
+                  <div class="form-field auto-field"><label>Claimed error (%)</label><input
+                      data-report-field="claimedError" type="number" step="0.1" value="1"></div>
+                </div>
+                <div class="reading-table-wrap">
+                  <table class="reading-input-table">
+                    <thead>
+                      <tr>
+                        <th>Sl.</th>
+                        <th>STD input (°C)</th>
+                        <th>DUC reading (°C)</th>
+                        <th>Error observed</th>
+                        <th>Remarks</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="readingsBody"></tbody>
+                  </table>
+                </div><button class="small-action" type="button" onclick="addReadingRow()">+ Add reading</button>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>04</span>
+                  <div>
+                    <h3>Standard & approval</h3>
+                    <p>Defaults from the supplied report; edit whenever the instrument or approver changes.</p>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field"><label>Primary standard</label><input data-report-field="standardName" value="Temperature Calibrator"></div><div class="form-field"><label>Standard make</label><input data-report-field="standardMake" value="KusumMeco"></div>
-                  <div class="form-field"><label>Standard serial no.</label><input data-report-field="standardSerial" value="091101560"></div><div class="form-field"><label>Standard report no.</label><input data-report-field="standardReportNo" value="TSC/25-26/10092-1"></div>
-                  <div class="form-field"><label>Calibration validity</label><input data-report-field="standardValidity" type="date" value="2026-08-29"></div><div class="form-field"><label>Traceable to</label><input data-report-field="traceableTo" value="TRANSCAL, BANGALORE WHICH ARE TRACEABLE TO NABL"></div>
-                  <div class="form-field form-field--full"><label>Method</label><textarea data-report-field="method" rows="2">Digital Calibrator is used as Ohm source.</textarea></div><div class="form-field form-field--full"><label>Condition</label><textarea data-report-field="condition" rows="2">All the readings are within the specified error, valid at the time of and under the stated conditions of measurements.</textarea></div>
-                  <div class="form-field"><label>Calibrated by</label><input data-report-field="calibratedBy" value="Dalton"></div><div class="form-field"><label>Checked by</label><input data-report-field="checkedBy" value="Asha"></div><div class="form-field"><label>Authorised signatory</label><input data-report-field="authorisedBy" value="PRASANNA RAO"></div>
+                  <div class="form-field"><label>Primary standard</label><input data-report-field="standardName"
+                      value="Temperature Calibrator"></div>
+                  <div class="form-field"><label>Standard make</label><input data-report-field="standardMake"
+                      value="KusumMeco"></div>
+                  <div class="form-field"><label>Standard serial no.</label><input data-report-field="standardSerial"
+                      value="091101560"></div>
+                  <div class="form-field"><label>Standard report no.</label><input data-report-field="standardReportNo"
+                      value="TSC/25-26/10092-1"></div>
+                  <div class="form-field"><label>Calibration validity</label><input data-report-field="standardValidity"
+                      type="date" value="2026-08-29"></div>
+                  <div class="form-field"><label>Traceable to</label><input data-report-field="traceableTo"
+                      value="TRANSCAL, BANGALORE WHICH ARE TRACEABLE TO NABL"></div>
+                  <div class="form-field form-field--full"><label>Method</label><textarea data-report-field="method"
+                      rows="2">Digital Calibrator is used as Ohm source.</textarea></div>
+                  <div class="form-field form-field--full"><label>Condition</label><textarea
+                      data-report-field="condition"
+                      rows="2">All the readings are within the specified error, valid at the time of and under the stated conditions of measurements.</textarea>
+                  </div>
+                  <div class="form-field"><label>Calibrated by</label><input data-report-field="calibratedBy"
+                      value="Dalton"></div>
+                  <div class="form-field"><label>Checked by</label><input data-report-field="checkedBy" value="Asha">
+                  </div>
+                  <div class="form-field"><label>Authorised signatory</label><input data-report-field="authorisedBy"
+                      value="PRASANNA RAO"></div>
                 </div>
               </div>
             </form>
-            <aside class="preview-panel"><div class="preview-label"><span>LIVE TEMPLATE</span><small>Fixed border and layout</small></div><div id="calibrationPreview" class="calibration-sheet"></div></aside>
+            <aside class="preview-panel">
+              <div class="preview-label"><span>LIVE TEMPLATE</span><small>Fixed border and layout</small></div>
+              <div id="calibrationPreview" class="calibration-sheet"></div>
+            </aside>
           </div>
         </section>
 
         <section id="recordsView" class="panel hidden">
-          <div class="records-header"><div><span class="section-kicker">REPORT REGISTER</span><h2>Calibration report records</h2><p>Search, open, edit and export reports in an Excel-compatible format.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportReportsCsv()">Export for Excel</button><button class="primary-action" onclick="openReportBuilder()">New report</button></div></div>
-          <div class="records-controls"><input id="recordsSearch" type="search" placeholder="Search report no., customer, device or serial no."><span id="recordCount"></span></div><div class="table-wrapper"><table id="recordsTable" class="records-table"></table></div>
+          <div class="records-header">
+            <div><span class="section-kicker">REPORT REGISTER</span>
+              <h2>Calibration report records</h2>
+              <p>Search, open, edit and export reports in an Excel-compatible format.</p>
+            </div>
+            <div class="toolbar-actions"><button class="ghost-btn" onclick="exportReportsCsv()">Export for
+                Excel</button><button class="primary-action" onclick="openReportBuilder()">New report</button></div>
+          </div>
+          <div class="records-controls"><input id="recordsSearch" type="search"
+              placeholder="Search report no., customer, device or serial no."><span id="recordCount"></span></div>
+          <div class="table-wrapper">
+            <table id="recordsTable" class="records-table"></table>
+          </div>
         </section>
 
         <section id="performanceReportBuilder" class="hidden">
-          <div class="report-toolbar"><div><span class="section-kicker">PERFORMANCE AUTOMATION</span><h2 id="performanceFormTitle">New performance report</h2><p>Linked to a calibration record with automatic error and result calculation.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="resetPerformanceReportForm()">New report</button><button class="ghost-btn" onclick="printPerformanceReport()">Print / PDF</button><button class="primary-action" onclick="savePerformanceReport()">Save report</button></div></div>
+          <div class="report-toolbar">
+            <div><span class="section-kicker">PERFORMANCE AUTOMATION</span>
+              <h2 id="performanceFormTitle">New performance report</h2>
+              <p>Linked to a calibration record with automatic error and result calculation.</p>
+            </div>
+            <div class="toolbar-actions"><button class="ghost-btn" onclick="resetPerformanceReportForm()">New
+                report</button><button class="ghost-btn" onclick="printPerformanceReport()">Print / PDF</button><button
+                class="primary-action" onclick="savePerformanceReport()">Save report</button></div>
+          </div>
           <div class="report-workspace">
             <form id="performanceForm" class="report-form" onsubmit="return false">
               <div class="form-section">
-                <div class="form-section-title"><span>01</span><div><h3>Report control</h3></div></div>
-                <div class="report-field-grid two"><div class="form-field form-field--full auto-field"><label>Linked calibration report</label><select data-performance-field="linkedCalibrationId" required><option value="">Select calibration report</option></select></div></div>
-                <div class="report-field-grid four"><div class="form-field auto-field"><label>Performance report no.</label><input data-performance-field="reportNo" required></div><div class="form-field auto-field"><label>Calibration on</label><input data-performance-field="calOn" type="date" required></div><div class="form-field auto-field"><label>Calibration due</label><input data-performance-field="calDue" type="date" required></div><div class="form-field auto-field"><label>Page no.</label><input data-performance-field="pageNo" required readonly title="Automatically follows the report number"></div></div>
-              </div>
-              <div class="form-section">
-                <div class="form-section-title"><span>02</span><div><h3>Customer &amp; instrument</h3></div></div>
+                <div class="form-section-title"><span>01</span>
+                  <div>
+                    <h3>Report control</h3>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field"><label>Customer name</label><input data-performance-field="customerName" list="customerDirectoryList" required placeholder="M/s. Customer name"></div><div class="form-field"><label>Customer address</label><textarea data-performance-field="customerAddress" rows="3" placeholder="Saved address fills automatically"></textarea></div>
-                  <div class="form-field form-field--full"><label>Instrument tested</label><input data-performance-field="instrumentTested" required placeholder="Electrode Drying Oven"></div><div class="form-field"><label>Serial no.</label><input data-performance-field="serialNo"></div>
-                  <div class="form-field"><label>Make</label><input data-performance-field="make"></div><div class="form-field"><label>Device</label><input data-performance-field="device"></div><div class="form-field"><label>Model</label><input data-performance-field="model"></div>
-                  <div class="form-field"><label>Room temperature</label><input data-performance-field="roomTemp" value="31°C ±2°C"></div><div class="form-field"><label>Humidity</label><input data-performance-field="humidity" value="55% ±5% RH"></div>
-                  <div class="form-field"><label>Instrument range</label><input data-performance-field="instrumentRange" value="Up to 250°C"></div><div class="form-field"><label>Accuracy</label><input data-performance-field="accuracy" type="number" min="0" step="0.01" value="3"></div><div class="form-field"><label>Error unit</label><select data-performance-field="errorUnit"><option value="°C" selected>°C</option><option value="%">%</option></select></div>
+                  <div class="form-field form-field--full auto-field"><label>Linked calibration report</label><select
+                      data-performance-field="linkedCalibrationId" required>
+                      <option value="">Select calibration report</option>
+                    </select></div>
+                </div>
+                <div class="report-field-grid four">
+                  <div class="form-field auto-field"><label>Performance report no.</label><input
+                      data-performance-field="reportNo" required></div>
+                  <div class="form-field auto-field"><label>Calibration on</label><input data-performance-field="calOn"
+                      type="date" required></div>
+                  <div class="form-field auto-field"><label>Calibration due</label><input
+                      data-performance-field="calDue" type="date" required></div>
+                  <div class="form-field auto-field"><label>Page no.</label><input data-performance-field="pageNo"
+                      required readonly title="Automatically follows the report number"></div>
                 </div>
               </div>
               <div class="form-section">
-                <div class="form-section-title"><span>03</span><div><h3>Performance readings</h3></div></div>
-                <div class="reading-table-wrap"><table class="reading-input-table performance-input-table"><thead><tr><th>Sl.</th><th>Reference</th><th>Observed</th><th>Error</th><th>Result</th><th>Action</th></tr></thead><tbody id="performanceReadingsBody"></tbody></table></div><button class="small-action" type="button" onclick="addPerformanceReadingRow()">+ Add reading</button>
+                <div class="form-section-title"><span>02</span>
+                  <div>
+                    <h3>Customer &amp; instrument</h3>
+                  </div>
+                </div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Customer name</label><input data-performance-field="customerName"
+                      list="customerDirectoryList" required placeholder="M/s. Customer name"></div>
+                  <div class="form-field"><label>Customer address</label><textarea
+                      data-performance-field="customerAddress" rows="3"
+                      placeholder="Saved address fills automatically"></textarea></div>
+                  <div class="form-field form-field--full"><label>Instrument tested</label><input
+                      data-performance-field="instrumentTested" required placeholder="Electrode Drying Oven"></div>
+                  <div class="form-field"><label>Serial no.</label><input data-performance-field="serialNo"></div>
+                  <div class="form-field"><label>Make</label><input data-performance-field="make"></div>
+                  <div class="form-field"><label>Device</label><input data-performance-field="device"></div>
+                  <div class="form-field"><label>Model</label><input data-performance-field="model"></div>
+                  <div class="form-field"><label>Room temperature</label><input data-performance-field="roomTemp"
+                      value="31°C ±2°C"></div>
+                  <div class="form-field"><label>Humidity</label><input data-performance-field="humidity"
+                      value="55% ±5% RH"></div>
+                  <div class="form-field"><label>Instrument range</label><input data-performance-field="instrumentRange"
+                      value="Up to 250°C"></div>
+                  <div class="form-field"><label>Accuracy</label><input data-performance-field="accuracy" type="number"
+                      min="0" step="0.01" value="3"></div>
+                  <div class="form-field"><label>Error unit</label><select data-performance-field="errorUnit">
+                      <option value="°C" selected>°C</option>
+                      <option value="%">%</option>
+                    </select></div>
+                </div>
               </div>
               <div class="form-section">
-                <div class="form-section-title"><span>04</span><div><h3>Standard &amp; approval</h3></div></div>
+                <div class="form-section-title"><span>03</span>
+                  <div>
+                    <h3>Performance readings</h3>
+                  </div>
+                </div>
+                <div class="reading-table-wrap">
+                  <table class="reading-input-table performance-input-table">
+                    <thead>
+                      <tr>
+                        <th>Sl.</th>
+                        <th>Reference</th>
+                        <th>Observed</th>
+                        <th>Error</th>
+                        <th>Result</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="performanceReadingsBody"></tbody>
+                  </table>
+                </div><button class="small-action" type="button" onclick="addPerformanceReadingRow()">+ Add
+                  reading</button>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>04</span>
+                  <div>
+                    <h3>Standard &amp; approval</h3>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field"><label>Primary standard</label><input data-performance-field="standardName" value="Temperature Calibrator"></div><div class="form-field"><label>Standard make</label><input data-performance-field="standardMake" value="KusumMeco"></div>
-                  <div class="form-field"><label>Standard serial no.</label><input data-performance-field="standardSerial" value="091101560"></div><div class="form-field"><label>Standard report no.</label><input data-performance-field="standardReportNo" value="TSC/25-26/10092-1"></div>
-                  <div class="form-field"><label>Calibration validity</label><input data-performance-field="standardValidity" type="date" value="2026-08-29"></div><div class="form-field"><label>Traceable to</label><input data-performance-field="traceableTo" value="TRANSCAL, BANGALORE WHICH ARE TRACEABLE TO NABL"></div>
-                  <div class="form-field form-field--full"><label>Method</label><textarea data-performance-field="method" rows="2">Compared with calibrated Digital Temperature Indicator</textarea></div><div class="form-field form-field--full"><label>Condition</label><textarea data-performance-field="condition" rows="2">All the readings are within the specified error, valid at the time of and under the stated conditions of measurements.</textarea></div>
-                  <div class="form-field"><label>Calibrated by</label><input data-performance-field="calibratedBy" value="Dalton"></div><div class="form-field"><label>Checked by</label><input data-performance-field="checkedBy" value="Asha"></div><div class="form-field"><label>Authorised signatory</label><input data-performance-field="authorisedBy" value="PRASANNA RAO"></div>
+                  <div class="form-field"><label>Primary standard</label><input data-performance-field="standardName"
+                      value="Temperature Calibrator"></div>
+                  <div class="form-field"><label>Standard make</label><input data-performance-field="standardMake"
+                      value="KusumMeco"></div>
+                  <div class="form-field"><label>Standard serial no.</label><input
+                      data-performance-field="standardSerial" value="091101560"></div>
+                  <div class="form-field"><label>Standard report no.</label><input
+                      data-performance-field="standardReportNo" value="TSC/25-26/10092-1"></div>
+                  <div class="form-field"><label>Calibration validity</label><input
+                      data-performance-field="standardValidity" type="date" value="2026-08-29"></div>
+                  <div class="form-field"><label>Traceable to</label><input data-performance-field="traceableTo"
+                      value="TRANSCAL, BANGALORE WHICH ARE TRACEABLE TO NABL"></div>
+                  <div class="form-field form-field--full"><label>Method</label><textarea
+                      data-performance-field="method"
+                      rows="2">Compared with calibrated Digital Temperature Indicator</textarea></div>
+                  <div class="form-field form-field--full"><label>Condition</label><textarea
+                      data-performance-field="condition"
+                      rows="2">All the readings are within the specified error, valid at the time of and under the stated conditions of measurements.</textarea>
+                  </div>
+                  <div class="form-field"><label>Calibrated by</label><input data-performance-field="calibratedBy"
+                      value="Dalton"></div>
+                  <div class="form-field"><label>Checked by</label><input data-performance-field="checkedBy"
+                      value="Asha"></div>
+                  <div class="form-field"><label>Authorised signatory</label><input
+                      data-performance-field="authorisedBy" value="PRASANNA RAO"></div>
                 </div>
               </div>
             </form>
-            <aside class="preview-panel"><div class="preview-label"><span>LIVE PERFORMANCE REPORT</span><small>A4 print-ready preview</small></div><div id="performancePreview" class="performance-sheet"></div></aside>
+            <aside class="preview-panel">
+              <div class="preview-label"><span>LIVE PERFORMANCE REPORT</span><small>A4 print-ready preview</small></div>
+              <div id="performancePreview" class="performance-sheet"></div>
+            </aside>
           </div>
         </section>
 
         <section id="performanceRecordsView" class="panel hidden">
-          <div class="records-header"><div><span class="section-kicker">PERFORMANCE REGISTER</span><h2>Performance report records</h2><p>Linked equipment performance reports stored separately from calibration records.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportPerformanceReportsCsv()">Export for Excel</button><button class="primary-action" onclick="openPerformanceReportBuilder()">New report</button></div></div>
-          <div class="records-controls"><input id="performanceRecordsSearch" type="search" placeholder="Search report, linked calibration, customer or instrument"><span id="performanceRecordCount"></span></div><div class="table-wrapper"><table id="performanceRecordsTable" class="records-table"></table></div>
+          <div class="records-header">
+            <div><span class="section-kicker">PERFORMANCE REGISTER</span>
+              <h2>Performance report records</h2>
+              <p>Linked equipment performance reports stored separately from calibration records.</p>
+            </div>
+            <div class="toolbar-actions"><button class="ghost-btn" onclick="exportPerformanceReportsCsv()">Export for
+                Excel</button><button class="primary-action" onclick="openPerformanceReportBuilder()">New
+                report</button></div>
+          </div>
+          <div class="records-controls"><input id="performanceRecordsSearch" type="search"
+              placeholder="Search report, linked calibration, customer or instrument"><span
+              id="performanceRecordCount"></span></div>
+          <div class="table-wrapper">
+            <table id="performanceRecordsTable" class="records-table"></table>
+          </div>
         </section>
 
         <section id="offerBuilder" class="hidden">
-          <div class="report-toolbar"><div><span class="section-kicker">HR AUTOMATION</span><h2 id="offerFormTitle">New offer letter</h2><p>Fill the placeholders, review the live letter, then confirm to save every detail.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="resetOfferForm()">New offer</button><button class="ghost-btn" onclick="printOfferLetter()">Print / PDF</button><button class="primary-action" onclick="confirmOfferLetter()">Confirm &amp; save</button></div></div>
+          <div class="report-toolbar">
+            <div><span class="section-kicker">HR AUTOMATION</span>
+              <h2 id="offerFormTitle">New offer letter</h2>
+              <p>Fill the placeholders, review the live letter, then confirm to save every detail.</p>
+            </div>
+            <div class="toolbar-actions"><button class="ghost-btn" onclick="resetOfferForm()">New offer</button><button
+                class="ghost-btn" onclick="printOfferLetter()">Print / PDF</button><button class="primary-action"
+                onclick="confirmOfferLetter()">Confirm &amp; save</button></div>
+          </div>
           <div class="report-workspace">
             <form id="offerForm" class="report-form" onsubmit="return false">
               <div class="form-section">
-                <div class="form-section-title"><span>01</span><div><h3>Candidate &amp; dates</h3><p>The offer number and date are filled automatically.</p></div></div>
+                <div class="form-section-title"><span>01</span>
+                  <div>
+                    <h3>Candidate &amp; dates</h3>
+                    <p>The offer number and date are filled automatically.</p>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field auto-field"><label>Offer record no.</label><input data-offer-field="offerNo" required readonly></div>
-                  <div class="form-field auto-field"><label>Offer date</label><input data-offer-field="offerDate" type="date" required></div>
-                  <div class="form-field form-field--full"><label>Candidate name</label><input data-offer-field="candidateName" required placeholder="Full name"></div>
-                  <div class="form-field"><label>Interview date</label><input data-offer-field="interviewDate" type="date" required></div>
-                  <div class="form-field"><label>Date of joining</label><input data-offer-field="joiningDate" type="date" required></div>
-                  <div class="form-field form-field--full"><label>Designation</label><input data-offer-field="designation" required placeholder="DESIGN / PRODUCTION ENGINEER"></div>
+                  <div class="form-field auto-field"><label>Offer record no.</label><input data-offer-field="offerNo"
+                      required readonly></div>
+                  <div class="form-field auto-field"><label>Offer date</label><input data-offer-field="offerDate"
+                      type="date" required></div>
+                  <div class="form-field form-field--full"><label>Candidate name</label><input
+                      data-offer-field="candidateName" required placeholder="Full name"></div>
+                  <div class="form-field"><label>Interview date</label><input data-offer-field="interviewDate"
+                      type="date" required></div>
+                  <div class="form-field"><label>Date of joining</label><input data-offer-field="joiningDate"
+                      type="date" required></div>
+                  <div class="form-field form-field--full"><label>Designation</label><input
+                      data-offer-field="designation" required placeholder="DESIGN / PRODUCTION ENGINEER"></div>
                 </div>
               </div>
               <div class="form-section">
-                <div class="form-section-title"><span>02</span><div><h3>Company &amp; appointment wording</h3><p>Defaults match the supplied Electrotech Services letter.</p></div></div>
+                <div class="form-section-title"><span>02</span>
+                  <div>
+                    <h3>Company &amp; appointment wording</h3>
+                    <p>Defaults match the supplied Electrotech Services letter.</p>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field"><label>Company name</label><input data-offer-field="companyName" value="Electrotech Services"></div>
-                  <div class="form-field"><label>Work location</label><input data-offer-field="workLocation" value="Baikampady"></div>
-                  <div class="form-field form-field--full"><label>Office address</label><input data-offer-field="officeAddress" value="Adjacent to Sm. 180, Industrial Area, Mangaluru, Baikampady, Mangalore-575011, Karnataka"></div>
-                  <div class="form-field"><label>Probation period (months)</label><input data-offer-field="probationMonths" type="number" min="0" value="6"></div>
-                  <div class="form-field"><label>Authorised name</label><input data-offer-field="authorisedName" value="ASHA"></div>
+                  <div class="form-field"><label>Company name</label><input data-offer-field="companyName"
+                      value="Electrotech Services"></div>
+                  <div class="form-field"><label>Work location</label><input data-offer-field="workLocation"
+                      value="Baikampady"></div>
+                  <div class="form-field form-field--full"><label>Office address</label><input
+                      data-offer-field="officeAddress"
+                      value="Adjacent to Sm. 180, Industrial Area, Mangaluru, Baikampady, Mangalore-575011, Karnataka">
+                  </div>
+                  <div class="form-field"><label>Probation period (months)</label><input
+                      data-offer-field="probationMonths" type="number" min="0" value="6"></div>
+                  <div class="form-field"><label>Authorised name</label><input data-offer-field="authorisedName"
+                      value="ASHA"></div>
                 </div>
               </div>
               <div class="form-section">
-                <div class="form-section-title"><span>03</span><div><h3>Documents &amp; benefits</h3><p>Use one required document per line.</p></div></div>
+                <div class="form-section-title"><span>03</span>
+                  <div>
+                    <h3>Documents &amp; benefits</h3>
+                    <p>Use one required document per line.</p>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field form-field--full"><label>Documents to carry</label><textarea data-offer-field="documents" rows="8">Aadhar Card (Original &amp; Photocopy)
+                  <div class="form-field form-field--full"><label>Documents to carry</label><textarea
+                      data-offer-field="documents" rows="8">Aadhar Card (Original &amp; Photocopy)
 PAN Card (Original &amp; Photocopy)
 Bank details / supporting proof (Original &amp; Photocopy)
 2 passport-size photographs
 Educational certificates from SSLC to final degree (Original &amp; Photocopy)
 Previous experience certificates and relieving letter
 ESI Registration Number</textarea></div>
-                  <div class="form-field form-field--full"><label>Benefits and policy wording</label><textarea data-offer-field="benefitsText" rows="4">ESI benefits will be provided from the date of joining, in accordance with applicable company policy and statutory eligibility requirements. Spot appreciation and special increment will be given based on performance.</textarea></div>
-                  <div class="form-field form-field--full"><label>Closing message</label><textarea data-offer-field="welcomeText" rows="2">We look forward to welcoming you to Electrotech Services.</textarea></div>
+                  <div class="form-field form-field--full"><label>Benefits and policy wording</label><textarea
+                      data-offer-field="benefitsText"
+                      rows="4">ESI benefits will be provided from the date of joining, in accordance with applicable company policy and statutory eligibility requirements. Spot appreciation and special increment will be given based on performance.</textarea>
+                  </div>
+                  <div class="form-field form-field--full"><label>Closing message</label><textarea
+                      data-offer-field="welcomeText"
+                      rows="2">We look forward to welcoming you to Electrotech Services.</textarea></div>
                 </div>
               </div>
             </form>
-            <aside class="preview-panel"><div class="preview-label"><span>LIVE OFFER LETTER</span><small>A4 print-ready preview</small></div><div id="offerPreview" class="offer-sheet"></div></aside>
+            <aside class="preview-panel">
+              <div class="preview-label"><span>LIVE OFFER LETTER</span><small>A4 print-ready preview</small></div>
+              <div id="offerPreview" class="offer-sheet"></div>
+            </aside>
           </div>
         </section>
 
         <section id="offerRecordsView" class="panel hidden">
-          <div class="records-header"><div><span class="section-kicker">OFFER LETTER REGISTER</span><h2>Confirmed offer letters</h2><p>Every confirmed offer is stored separately from calibration records.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportOffersCsv()">Export for Excel</button><button class="primary-action" onclick="openOfferBuilder()">New offer</button></div></div>
-          <div class="records-controls"><input id="offerRecordsSearch" type="search" placeholder="Search offer no., candidate or designation"><span id="offerRecordCount"></span></div><div class="table-wrapper"><table id="offerRecordsTable" class="records-table"></table></div>
+          <div class="records-header">
+            <div><span class="section-kicker">OFFER LETTER REGISTER</span>
+              <h2>Confirmed offer letters</h2>
+              <p>Every confirmed offer is stored separately from calibration records.</p>
+            </div>
+            <div class="toolbar-actions"><button class="ghost-btn" onclick="exportOffersCsv()">Export for
+                Excel</button><button class="primary-action" onclick="openOfferBuilder()">New offer</button></div>
+          </div>
+          <div class="records-controls"><input id="offerRecordsSearch" type="search"
+              placeholder="Search offer no., candidate or designation"><span id="offerRecordCount"></span></div>
+          <div class="table-wrapper">
+            <table id="offerRecordsTable" class="records-table"></table>
+          </div>
         </section>
 
         <section id="appointmentBuilder" class="hidden">
-          <div class="report-toolbar"><div><span class="section-kicker">HR AUTOMATION</span><h2 id="appointmentFormTitle">New appointment letter</h2><p>Built from the supplied four-page appointment letter with a separate register and print-ready preview.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="resetAppointmentForm()">New appointment</button><button class="ghost-btn" onclick="printAppointmentLetter()">Print / PDF</button><button class="primary-action" onclick="confirmAppointmentLetter()">Confirm &amp; save</button></div></div>
+          <div class="report-toolbar">
+            <div><span class="section-kicker">HR AUTOMATION</span>
+              <h2 id="appointmentFormTitle">New appointment letter</h2>
+              <p>Built from the supplied four-page appointment letter with a separate register and print-ready preview.
+              </p>
+            </div>
+            <div class="toolbar-actions"><button class="ghost-btn" onclick="resetAppointmentForm()">New
+                appointment</button><button class="ghost-btn" onclick="printAppointmentLetter()">Print /
+                PDF</button><button class="primary-action" onclick="confirmAppointmentLetter()">Confirm &amp;
+                save</button></div>
+          </div>
           <div class="report-workspace">
             <form id="appointmentForm" class="report-form" onsubmit="return false">
               <div class="form-section">
-                <div class="form-section-title"><span>01</span><div><h3>Employee &amp; appointment</h3><p>The appointment number and date are generated automatically.</p></div></div>
+                <div class="form-section-title"><span>01</span>
+                  <div>
+                    <h3>Employee &amp; appointment</h3>
+                    <p>The appointment number and date are generated automatically.</p>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field auto-field"><label>Appointment record no.</label><input data-appointment-field="appointmentNo" required readonly></div>
-                  <div class="form-field auto-field"><label>Appointment date</label><input data-appointment-field="appointmentDate" type="date" required></div>
-                  <div class="form-field"><label>Employee name</label><input data-appointment-field="employeeName" required placeholder="Full name"></div>
-                  <div class="form-field"><label>Phone number</label><input data-appointment-field="phone" placeholder="+91 9876543210"></div>
-                  <div class="form-field form-field--full"><label>Employee address</label><textarea data-appointment-field="employeeAddress" rows="3" required placeholder="Complete residential address"></textarea></div>
-                  <div class="form-field"><label>Designation</label><input data-appointment-field="designation" required placeholder="DESIGN / PRODUCTION ENGINEER"></div>
-                  <div class="form-field"><label>Date of joining</label><input data-appointment-field="joiningDate" type="date" required></div>
-                  <div class="form-field"><label>Reporting officer</label><input data-appointment-field="reportingOfficer" value="Ms. Shivani"></div>
-                  <div class="form-field"><label>General shift timing</label><input data-appointment-field="workingHours" value="9:00 AM - 6:00 PM"></div>
+                  <div class="form-field auto-field"><label>Appointment record no.</label><input
+                      data-appointment-field="appointmentNo" required readonly></div>
+                  <div class="form-field auto-field"><label>Appointment date</label><input
+                      data-appointment-field="appointmentDate" type="date" required></div>
+                  <div class="form-field"><label>Employee name</label><input data-appointment-field="employeeName"
+                      required placeholder="Full name"></div>
+                  <div class="form-field"><label>Phone number</label><input data-appointment-field="phone"
+                      placeholder="+91 9876543210"></div>
+                  <div class="form-field form-field--full"><label>Employee address</label><textarea
+                      data-appointment-field="employeeAddress" rows="3" required
+                      placeholder="Complete residential address"></textarea></div>
+                  <div class="form-field"><label>Designation</label><input data-appointment-field="designation" required
+                      placeholder="DESIGN / PRODUCTION ENGINEER"></div>
+                  <div class="form-field"><label>Date of joining</label><input data-appointment-field="joiningDate"
+                      type="date" required></div>
+                  <div class="form-field"><label>Reporting officer</label><input
+                      data-appointment-field="reportingOfficer" value="Ms. Shivani"></div>
+                  <div class="form-field"><label>General shift timing</label><input
+                      data-appointment-field="workingHours" value="9:00 AM - 6:00 PM"></div>
                 </div>
               </div>
               <div class="form-section">
-                <div class="form-section-title"><span>02</span><div><h3>Employment terms</h3><p>These values feed the employment, probation and termination clauses.</p></div></div>
+                <div class="form-section-title"><span>02</span>
+                  <div>
+                    <h3>Employment terms</h3>
+                    <p>These values feed the employment, probation and termination clauses.</p>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field"><label>Company name</label><input data-appointment-field="companyName" value="Electrotech Services"></div>
-                  <div class="form-field"><label>HR representative</label><input data-appointment-field="hrName" value="Mr. Vinod Kumar"></div>
-                  <div class="form-field form-field--full"><label>Place of employment</label><textarea data-appointment-field="employmentLocation" rows="2">Electrotech Services, SM Adj 180, Industrial Estate, Baikampady, Mangaluru-575011</textarea></div>
-                  <div class="form-field form-field--full"><label>Duties &amp; responsibilities</label><textarea data-appointment-field="duties" rows="3">You will be responsible for all activities related to your designation, as well as any additional roles and responsibilities entrusted by Management from time to time.</textarea></div>
-                  <div class="form-field"><label>Probation period (months)</label><input data-appointment-field="probationMonths" type="number" min="0" value="6"></div>
-                  <div class="form-field"><label>Notice period (months)</label><input data-appointment-field="noticeMonths" type="number" min="0" value="2"></div>
-                  <div class="form-field"><label>Emergency leave notice (days)</label><input data-appointment-field="leaveNoticeDays" type="number" min="0" value="2"></div>
-                  <div class="form-field"><label>Unauthorised absence limit (days)</label><input data-appointment-field="absenceDays" type="number" min="1" value="7"></div>
-                  <div class="form-field"><label>Legal jurisdiction</label><input data-appointment-field="jurisdiction" value="Mangalore Courts"></div>
+                  <div class="form-field"><label>Company name</label><input data-appointment-field="companyName"
+                      value="Electrotech Services"></div>
+                  <div class="form-field"><label>HR representative</label><input data-appointment-field="hrName"
+                      value="Mr. Vinod Kumar"></div>
+                  <div class="form-field form-field--full"><label>Place of employment</label><textarea
+                      data-appointment-field="employmentLocation"
+                      rows="2">Electrotech Services, SM Adj 180, Industrial Estate, Baikampady, Mangaluru-575011</textarea>
+                  </div>
+                  <div class="form-field form-field--full"><label>Duties &amp; responsibilities</label><textarea
+                      data-appointment-field="duties"
+                      rows="3">You will be responsible for all activities related to your designation, as well as any additional roles and responsibilities entrusted by Management from time to time.</textarea>
+                  </div>
+                  <div class="form-field"><label>Probation period (months)</label><input
+                      data-appointment-field="probationMonths" type="number" min="0" value="6"></div>
+                  <div class="form-field"><label>Notice period (months)</label><input
+                      data-appointment-field="noticeMonths" type="number" min="0" value="2"></div>
+                  <div class="form-field"><label>Emergency leave notice (days)</label><input
+                      data-appointment-field="leaveNoticeDays" type="number" min="0" value="2"></div>
+                  <div class="form-field"><label>Unauthorised absence limit (days)</label><input
+                      data-appointment-field="absenceDays" type="number" min="1" value="7"></div>
+                  <div class="form-field"><label>Legal jurisdiction</label><input data-appointment-field="jurisdiction"
+                      value="Mangalore Courts"></div>
                 </div>
               </div>
               <div class="form-section">
-                <div class="form-section-title"><span>03</span><div><h3>Compensation annexure</h3><p>Enter monthly values; annual figures are calculated automatically. Use NIL where not applicable.</p></div></div>
+                <div class="form-section-title"><span>03</span>
+                  <div>
+                    <h3>Compensation annexure</h3>
+                    <p>Enter monthly values; annual figures are calculated automatically. Use NIL where not applicable.
+                    </p>
+                  </div>
+                </div>
                 <div class="report-field-grid two">
-                  <div class="form-field"><label>Gross / basic salary per month (Rs.)</label><input data-appointment-field="grossSalaryMonthly" type="number" min="0" value="20000"></div>
-                  <div class="form-field"><label>Salary in words</label><input data-appointment-field="salaryWords" value="Twenty Thousand"></div>
-                  <div class="form-field"><label>House rent allowance</label><input data-appointment-field="hraMonthly" value="NIL"></div>
-                  <div class="form-field"><label>Conveyance allowance</label><input data-appointment-field="conveyanceMonthly" value="NIL"></div>
-                  <div class="form-field"><label>Medical reimbursement</label><input data-appointment-field="medicalMonthly" value="NIL"></div>
-                  <div class="form-field"><label>Special allowance</label><input data-appointment-field="specialMonthly" value="NIL"></div>
-                  <div class="form-field"><label>Variable pay</label><input data-appointment-field="variableMonthly" value="NIL"></div>
-                  <div class="form-field"><label>Employer contribution (ESI)</label><input data-appointment-field="esiRate" value="0.75%"></div>
-                  <div class="form-field form-field--full"><label>Gratuity note</label><textarea data-appointment-field="gratuityNote" rows="2">As per the Payment of Gratuity Act, 1972 and Rules thereunder.</textarea></div>
+                  <div class="form-field"><label>Gross / basic salary per month (Rs.)</label><input
+                      data-appointment-field="grossSalaryMonthly" type="number" min="0" value="20000"></div>
+                  <div class="form-field"><label>Salary in words</label><input data-appointment-field="salaryWords"
+                      value="Twenty Thousand"></div>
+                  <div class="form-field"><label>House rent allowance</label><input data-appointment-field="hraMonthly"
+                      value="NIL"></div>
+                  <div class="form-field"><label>Conveyance allowance</label><input
+                      data-appointment-field="conveyanceMonthly" value="NIL"></div>
+                  <div class="form-field"><label>Medical reimbursement</label><input
+                      data-appointment-field="medicalMonthly" value="NIL"></div>
+                  <div class="form-field"><label>Special allowance</label><input data-appointment-field="specialMonthly"
+                      value="NIL"></div>
+                  <div class="form-field"><label>Variable pay</label><input data-appointment-field="variableMonthly"
+                      value="NIL"></div>
+                  <div class="form-field"><label>Employer contribution (ESI)</label><input
+                      data-appointment-field="esiRate" value="0.75%"></div>
+                  <div class="form-field form-field--full"><label>Gratuity note</label><textarea
+                      data-appointment-field="gratuityNote"
+                      rows="2">As per the Payment of Gratuity Act, 1972 and Rules thereunder.</textarea></div>
                 </div>
               </div>
             </form>
-            <aside class="preview-panel"><div class="preview-label"><span>LIVE APPOINTMENT LETTER</span><small>Four-page print-ready preview</small></div><div id="appointmentPreview" class="appointment-preview"></div></aside>
+            <aside class="preview-panel">
+              <div class="preview-label"><span>LIVE APPOINTMENT LETTER</span><small>Four-page print-ready
+                  preview</small></div>
+              <div id="appointmentPreview" class="appointment-preview"></div>
+            </aside>
           </div>
         </section>
 
         <section id="appointmentRecordsView" class="panel hidden">
-          <div class="records-header"><div><span class="section-kicker">APPOINTMENT LETTER REGISTER</span><h2>Issued appointment letters</h2><p>Appointment letters are stored independently from offer letters.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportAppointmentsCsv()">Export for Excel</button><button class="primary-action" onclick="openAppointmentBuilder()">New appointment</button></div></div>
-          <div class="records-controls"><input id="appointmentRecordsSearch" type="search" placeholder="Search appointment no., employee or designation"><span id="appointmentRecordCount"></span></div><div class="table-wrapper"><table id="appointmentRecordsTable" class="records-table"></table></div>
+          <div class="records-header">
+            <div><span class="section-kicker">APPOINTMENT LETTER REGISTER</span>
+              <h2>Issued appointment letters</h2>
+              <p>Appointment letters are stored independently from offer letters.</p>
+            </div>
+            <div class="toolbar-actions"><button class="ghost-btn" onclick="exportAppointmentsCsv()">Export for
+                Excel</button><button class="primary-action" onclick="openAppointmentBuilder()">New appointment</button>
+            </div>
+          </div>
+          <div class="records-controls"><input id="appointmentRecordsSearch" type="search"
+              placeholder="Search appointment no., employee or designation"><span id="appointmentRecordCount"></span>
+          </div>
+          <div class="table-wrapper">
+            <table id="appointmentRecordsTable" class="records-table"></table>
+          </div>
         </section>
 
-        <section id="dbEditor" class="panel hidden"><div class="material-bar"><h3 id="dbTitle">Edit database</h3><button class="back-btn" onclick="backToLanding()">Back</button></div><div class="table-wrapper"><table id="dbTable"></table></div><button id="saveBtn" class="primary-action table-save" onclick="saveDatabase()">Save changes</button></section>
+        <section id="dbEditor" class="panel hidden">
+          <div class="material-bar">
+            <h3 id="dbTitle">Edit database</h3><button class="back-btn" onclick="backToLanding()">Back</button>
+          </div>
+          <div class="table-wrapper">
+            <table id="dbTable"></table>
+          </div><button id="saveBtn" class="primary-action table-save" onclick="saveDatabase()">Save changes</button>
+        </section>
       </main>
     </div>
   </div>
 
-  <div id="passwordModal" class="modal hidden"><div class="modal-box"><h3>Enter admin password</h3><input type="password" id="dbPassword"><button class="primary-action" onclick="checkPassword()">Enter</button><button class="secondary-action" onclick="closePassword()">Cancel</button><p id="passError"></p></div></div>
-  <div id="saveModal" class="modal hidden"><div class="modal-box"><h3 id="saveTitle">Status</h3><p id="saveMessage"></p><button class="primary-action" onclick="closeSaveModal()">OK</button></div></div>
+  <div id="passwordModal" class="modal hidden">
+    <div class="modal-box">
+      <h3>Enter admin password</h3><input type="password" id="dbPassword"><button class="primary-action"
+        onclick="checkPassword()">Enter</button><button class="secondary-action"
+        onclick="closePassword()">Cancel</button>
+      <p id="passError"></p>
+    </div>
+  </div>
+  <div id="saveModal" class="modal hidden">
+    <div class="modal-box">
+      <h3 id="saveTitle">Status</h3>
+      <p id="saveMessage"></p><button class="primary-action" onclick="closeSaveModal()">OK</button>
+    </div>
+  </div>
+  <div id="installModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="installModalTitle">
+    <div class="modal-box install-modal-box">
+      <img src="assets/app-icon-192.png" alt="" aria-hidden="true">
+      <h3 id="installModalTitle">Install Electro Operations</h3>
+      <p id="installModalMessage">Add this app to your device for quick access and a focused app window.</p>
+      <div id="installInstructions" class="install-instructions"></div>
+      <button id="closeInstallModalButton" class="primary-action" type="button" onclick="closeInstallModal()">Got
+        it</button>
+    </div>
+  </div>
   <script src="script.js"></script>
 </body>
+
 </html>
