@@ -21,6 +21,11 @@ const OFFER_HEADERS = [
   "id", "offer_no", "candidate_name", "designation", "offer_date",
   "joining_date", "status", "payload_json", "confirmed_at", "updated_at"
 ];
+const APPOINTMENT_SHEET = "appointment_letters";
+const APPOINTMENT_HEADERS = [
+  "id", "appointment_no", "employee_name", "designation", "appointment_date",
+  "joining_date", "status", "payload_json", "confirmed_at", "updated_at"
+];
 const SPREADSHEET_ID = "1fuzplqthrPBaIbyuaGIOg_n1Z8XnSSdimjJjArl76So";
 const ADMIN_PASSWORD = "CHANGE_THIS_TO_YOUR_PASSWORD";
 
@@ -38,6 +43,10 @@ function doGet(event) {
 
     if (action === "listOffers") {
       return json_({ ok: true, data: listOffers_() });
+    }
+
+    if (action === "listAppointments") {
+      return json_({ ok: true, data: listAppointments_() });
     }
 
     if (action !== "read") throw new Error("Unsupported request.");
@@ -82,6 +91,12 @@ function doPost(event) {
       const offer = validateOffer_(body.offer);
       saveOffer_(offer);
       return json_({ ok: true, id: offer.id, offerNo: offer.offerNo });
+    }
+
+    if (body.action === "saveAppointment") {
+      const appointment = validateAppointment_(body.appointment);
+      saveAppointment_(appointment);
+      return json_({ ok: true, id: appointment.id, appointmentNo: appointment.appointmentNo });
     }
 
     throw new Error("Unsupported request.");
@@ -317,6 +332,84 @@ function formatOfferSheet_(sheet) {
     .setFontColor("#ffffff");
   sheet.getRange("E:F").setNumberFormat("yyyy-mm-dd");
   sheet.autoResizeColumns(1, OFFER_HEADERS.length);
+  sheet.setColumnWidth(8, 420);
+}
+
+function getAppointmentSheet_() {
+  const spreadsheet = getSpreadsheet_();
+  let sheet = spreadsheet.getSheetByName(APPOINTMENT_SHEET);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(APPOINTMENT_SHEET);
+    sheet.getRange(1, 1, 1, APPOINTMENT_HEADERS.length).setValues([APPOINTMENT_HEADERS]);
+    formatAppointmentSheet_(sheet);
+  }
+  return sheet;
+}
+
+function listAppointments_() {
+  const sheet = getAppointmentSheet_();
+  if (sheet.getLastRow() < 2) return [];
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, APPOINTMENT_HEADERS.length).getValues()
+    .filter(function (row) { return row[0] !== ""; })
+    .map(function (row) {
+      try { return JSON.parse(String(row[7] || "{}")); }
+      catch (_error) { return null; }
+    })
+    .filter(function (appointment) { return appointment && appointment.id; })
+    .sort(function (a, b) { return String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")); });
+}
+
+function saveAppointment_(appointment) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = getAppointmentSheet_();
+    const lastRow = sheet.getLastRow();
+    let targetRow = lastRow + 1;
+    if (lastRow >= 2) {
+      const ids = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+      for (let index = 0; index < ids.length; index++) {
+        if (String(ids[index][0]) === appointment.id) {
+          targetRow = index + 2;
+          break;
+        }
+      }
+    }
+    const values = [[
+      appointment.id, appointment.appointmentNo, appointment.employeeName, appointment.designation,
+      appointment.appointmentDate, appointment.joiningDate, appointment.status,
+      JSON.stringify(appointment), appointment.confirmedAt, appointment.updatedAt
+    ]];
+    sheet.getRange(targetRow, 1, 1, APPOINTMENT_HEADERS.length).setValues(values);
+    formatAppointmentSheet_(sheet);
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function validateAppointment_(source) {
+  if (!source || typeof source !== "object") throw new Error("Appointment letter is missing.");
+  const appointment = JSON.parse(JSON.stringify(source));
+  ["id", "appointmentNo", "employeeName", "employeeAddress", "designation", "appointmentDate", "joiningDate", "companyName", "hrName", "confirmedAt", "updatedAt"].forEach(function (field) {
+    if (!String(appointment[field] || "").trim()) throw new Error("Missing appointment field: " + field);
+  });
+  if (!isFinite(Number(appointment.grossSalaryMonthly)) || Number(appointment.grossSalaryMonthly) < 0) {
+    throw new Error("Appointment salary is invalid.");
+  }
+  if (JSON.stringify(appointment).length > 45000) throw new Error("Appointment letter is too large.");
+  appointment.status = "Issued";
+  return appointment;
+}
+
+function formatAppointmentSheet_(sheet) {
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, APPOINTMENT_HEADERS.length)
+    .setFontWeight("bold")
+    .setBackground("#29277e")
+    .setFontColor("#ffffff");
+  sheet.getRange("E:F").setNumberFormat("yyyy-mm-dd");
+  sheet.autoResizeColumns(1, APPOINTMENT_HEADERS.length);
   sheet.setColumnWidth(8, 420);
 }
 

@@ -15,6 +15,8 @@ let editingReportId = null;
 let lastAutofilledCustomerKey = "";
 let offerLetters = [];
 let editingOfferId = null;
+let appointmentLetters = [];
+let editingAppointmentId = null;
 let performanceReports = [];
 let editingPerformanceReportId = null;
 let lastAutofilledPerformanceCustomerKey = "";
@@ -26,6 +28,8 @@ const CUSTOMER_STORAGE_KEY = "electrotech-customer-directory-v1";
 const HEATER_CALCULATION_COUNT_KEY = "electro-group-heater-calculation-count-v1";
 const OFFER_STORAGE_KEY = "electrotech-offer-letters-v1";
 const OFFER_SEQUENCE_KEY = "electrotech-offer-letter-sequence-v1";
+const APPOINTMENT_STORAGE_KEY = "electrotech-appointment-letters-v1";
+const APPOINTMENT_SEQUENCE_KEY = "electrotech-appointment-letter-sequence-v1";
 const PERFORMANCE_STORAGE_KEY = "electrotech-performance-reports-v1";
 
 /* Available standard core diameters (mm) – sorted ascending */
@@ -80,6 +84,8 @@ const reportBuilder = document.getElementById("reportBuilder");
 const recordsView = document.getElementById("recordsView");
 const offerBuilder = document.getElementById("offerBuilder");
 const offerRecordsView = document.getElementById("offerRecordsView");
+const appointmentBuilder = document.getElementById("appointmentBuilder");
+const appointmentRecordsView = document.getElementById("appointmentRecordsView");
 const performanceReportBuilder = document.getElementById("performanceReportBuilder");
 const performanceRecordsView = document.getElementById("performanceRecordsView");
 const passwordModal = document.getElementById("passwordModal");
@@ -126,7 +132,7 @@ async function sheetsApiRequest(action, payload = {}) {
     );
   }
 
-  const isRead = action === "read" || action === "listReports" || action === "listPerformanceReports" || action === "listOffers";
+  const isRead = action === "read" || action === "listReports" || action === "listPerformanceReports" || action === "listOffers" || action === "listAppointments";
   const options = isRead
     ? { method: "GET", redirect: "follow", cache: "no-store" }
     : {
@@ -195,6 +201,8 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   recordsView.classList.add("hidden");
   offerBuilder.classList.add("hidden");
   offerRecordsView.classList.add("hidden");
+  appointmentBuilder.classList.add("hidden");
+  appointmentRecordsView.classList.add("hidden");
   performanceReportBuilder.classList.add("hidden");
   performanceRecordsView.classList.add("hidden");
 
@@ -205,15 +213,15 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   });
   const calibrationGroup = document.querySelector('[data-nav-group="calibration"]');
   const calibrationActive = ["reports", "records", "performanceReports", "performanceRecords"].includes(screen);
-  const offerGroup = document.querySelector('[data-nav-group="offers"]');
-  const offerActive = ["offers", "offerRecords"].includes(screen);
-  updateBrandContext(calibrationActive || offerActive);
+  const hrLettersGroup = document.querySelector('[data-nav-group="hrLetters"]');
+  const hrLettersActive = ["offers", "offerRecords", "appointments", "appointmentRecords"].includes(screen);
+  updateBrandContext(calibrationActive || hrLettersActive);
   calibrationGroup.classList.toggle("active", calibrationActive);
   if (calibrationActive) calibrationGroup.classList.add("open");
   else calibrationGroup.classList.remove("open");
-  offerGroup.classList.toggle("active", offerActive);
-  if (offerActive) offerGroup.classList.add("open");
-  else offerGroup.classList.remove("open");
+  hrLettersGroup.classList.toggle("active", hrLettersActive);
+  if (hrLettersActive) hrLettersGroup.classList.add("open");
+  else hrLettersGroup.classList.remove("open");
 
   const titleMap = {
     dashboard: "Operations & Automation",
@@ -226,7 +234,9 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
     performanceReports: "Performance Report Builder",
     performanceRecords: "Performance Report Records",
     offers: "Offer Letter Generator",
-    offerRecords: "Offer Letter Records"
+    offerRecords: "Offer Letter Records",
+    appointments: "Appointment Letter Generator",
+    appointmentRecords: "Appointment Letter Records"
   };
   const pageTitle = document.getElementById("pageTitle");
   if (pageTitle) pageTitle.textContent = titleMap[screen] || "Operations & Automation";
@@ -234,12 +244,14 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
   if (screen === "dashboard") {
     dashboard.classList.remove("hidden");
     loadLocalOffers();
+    loadLocalAppointments();
     loadLocalReports();
     loadLocalPerformanceReports();
     refreshDashboardMetrics();
     syncReportsFromSheet();
     syncPerformanceReportsFromSheet();
     syncOffersFromSheet();
+    syncAppointmentsFromSheet();
     return;
   }
 
@@ -292,6 +304,22 @@ function renderScreen(screen, material = activeMaterial, options = {}) {
     loadLocalOffers();
     renderOfferRecords();
     syncOffersFromSheet();
+    return;
+  }
+
+  if (screen === "appointments") {
+    appointmentBuilder.classList.remove("hidden");
+    if (!options.keepDraft && !editingAppointmentId) ensureAppointmentDefaults();
+    syncAppointmentsFromSheet();
+    renderAppointmentPreview();
+    return;
+  }
+
+  if (screen === "appointmentRecords") {
+    appointmentRecordsView.classList.remove("hidden");
+    loadLocalAppointments();
+    renderAppointmentRecords();
+    syncAppointmentsFromSheet();
     return;
   }
 
@@ -352,7 +380,7 @@ function saveHistoryState(screen, material = activeMaterial, replace = false) {
   const state = {
     app: APP_HISTORY_KEY,
     screen,
-    material: ["material", "dashboard", "reports", "records", "performanceReports", "performanceRecords", "offers", "offerRecords"].includes(screen) ? null : material,
+    material: ["material", "dashboard", "reports", "records", "performanceReports", "performanceRecords", "offers", "offerRecords", "appointments", "appointmentRecords"].includes(screen) ? null : material,
     index: replace ? currentHistoryIndex : currentHistoryIndex + 1
   };
 
@@ -396,8 +424,8 @@ function toggleCalibrationNav() {
   document.querySelector('[data-nav-group="calibration"]').classList.toggle("open");
 }
 
-function toggleOfferNav() {
-  document.querySelector('[data-nav-group="offers"]').classList.toggle("open");
+function toggleHrLettersNav() {
+  document.querySelector('[data-nav-group="hrLetters"]').classList.toggle("open");
 }
 
 function openHeaterModule() {
@@ -455,6 +483,23 @@ async function openOfferBuilder() {
 
 function openOfferRecords() {
   navigateTo("offerRecords", null);
+}
+
+async function openAppointmentBuilder() {
+  editingAppointmentId = null;
+  navigateTo("appointments", null);
+  resetAppointmentForm();
+  const provisionalNumber = appointmentField("appointmentNo").value;
+  await syncAppointmentsFromSheet();
+  if (currentScreen === "appointments" && !editingAppointmentId && appointmentField("appointmentNo").value === provisionalNumber) {
+    appointmentField("appointmentNo").value = "";
+    ensureAppointmentDefaults();
+    renderAppointmentPreview();
+  }
+}
+
+function openAppointmentRecords() {
+  navigateTo("appointmentRecords", null);
 }
 
 /* =========================================================
@@ -1507,6 +1552,7 @@ function refreshDashboardMetrics() {
   document.getElementById("dashboardDueSoon").textContent = dueSoon;
   document.getElementById("dashboardHeaterRuns").textContent = getHeaterCalculationCount();
   document.getElementById("dashboardOfferLetters").textContent = offerLetters.length;
+  document.getElementById("dashboardAppointmentLetters").textContent = appointmentLetters.length;
   document.getElementById("dashboardPerformanceReports").textContent = performanceReports.length;
 
   const recentList = document.getElementById("dashboardRecentReports");
@@ -1746,7 +1792,7 @@ function exportReportsCsv() {
 
 function printCalibrationReport() {
   renderCalibrationPreview();
-  document.body.classList.remove("print-offer", "print-performance");
+  document.body.classList.remove("print-offer", "print-performance", "print-appointment");
   document.body.classList.add("print-calibration");
   window.print();
 }
@@ -2098,7 +2144,7 @@ function exportPerformanceReportsCsv() {
 
 function printPerformanceReport() {
   renderPerformancePreview();
-  document.body.classList.remove("print-calibration", "print-offer");
+  document.body.classList.remove("print-calibration", "print-offer", "print-appointment");
   document.body.classList.add("print-performance");
   window.print();
 }
@@ -2356,7 +2402,7 @@ function exportOffersCsv() {
 
 function printOfferLetter() {
   renderOfferPreview();
-  document.body.classList.remove("print-calibration", "print-performance");
+  document.body.classList.remove("print-calibration", "print-performance", "print-appointment");
   document.body.classList.add("print-offer");
   window.print();
 }
@@ -2366,10 +2412,353 @@ function setupOfferAutomation() {
   ensureOfferDefaults();
   document.getElementById("offerForm").addEventListener("input", renderOfferPreview);
   document.getElementById("offerRecordsSearch").addEventListener("input", renderOfferRecords);
-  window.addEventListener("afterprint", () => document.body.classList.remove("print-calibration", "print-performance", "print-offer"));
+  window.addEventListener("afterprint", () => document.body.classList.remove("print-calibration", "print-performance", "print-offer", "print-appointment"));
   renderOfferPreview();
+}
+
+/* =========================================================
+   APPOINTMENT LETTER AUTOMATION
+========================================================= */
+
+function appointmentField(name) {
+  return document.querySelector(`[data-appointment-field="${name}"]`);
+}
+
+function loadLocalAppointments() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(APPOINTMENT_STORAGE_KEY) || "[]");
+    appointmentLetters = Array.isArray(saved) ? saved : [];
+  } catch (_error) {
+    appointmentLetters = [];
+  }
+  return appointmentLetters;
+}
+
+function persistLocalAppointments() {
+  localStorage.setItem(APPOINTMENT_STORAGE_KEY, JSON.stringify(appointmentLetters));
+}
+
+function extractAppointmentSequence(appointmentNumber) {
+  const match = String(appointmentNumber || "").match(/ETS\/APL\/(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function readAppointmentSequenceState() {
+  try {
+    const value = JSON.parse(localStorage.getItem(APPOINTMENT_SEQUENCE_KEY) || "null");
+    return value && Number.isFinite(Number(value.sequence)) ? value : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function rememberAppointmentSequence(appointmentNumber, updatedAt = new Date().toISOString()) {
+  const sequence = extractAppointmentSequence(appointmentNumber);
+  if (sequence !== null) {
+    localStorage.setItem(APPOINTMENT_SEQUENCE_KEY, JSON.stringify({ sequence, updatedAt }));
+  }
+}
+
+function nextAppointmentSequence() {
+  loadLocalAppointments();
+  const state = readAppointmentSequenceState();
+  const highest = appointmentLetters.reduce((max, appointment) => Math.max(max, extractAppointmentSequence(appointment.appointmentNo) || 0), 0);
+  return Math.max(highest, Number(state?.sequence || 0)) + 1;
+}
+
+async function syncAppointmentsFromSheet() {
+  try {
+    const response = await sheetsApiRequest("listAppointments");
+    if (!Array.isArray(response.data)) return;
+    const combined = new Map(appointmentLetters.map((appointment) => [appointment.id, appointment]));
+    response.data.forEach((remoteAppointment) => {
+      const localAppointment = combined.get(remoteAppointment.id);
+      if (!localAppointment || String(remoteAppointment.updatedAt || "") > String(localAppointment.updatedAt || "")) {
+        combined.set(remoteAppointment.id, remoteAppointment);
+      }
+    });
+    appointmentLetters = Array.from(combined.values()).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    persistLocalAppointments();
+    const newestAppointment = appointmentLetters[0];
+    const sequenceState = readAppointmentSequenceState();
+    if (newestAppointment && (!sequenceState || String(newestAppointment.updatedAt || "") > String(sequenceState.updatedAt || ""))) {
+      rememberAppointmentSequence(newestAppointment.appointmentNo, newestAppointment.updatedAt);
+    }
+    if (currentScreen === "appointmentRecords") renderAppointmentRecords();
+    if (currentScreen === "dashboard") refreshDashboardMetrics();
+  } catch (error) {
+    console.info("Shared appointment-letter register is waiting for the updated Apps Script deployment.");
+  }
+}
+
+function ensureAppointmentDefaults() {
+  if (!document.getElementById("appointmentForm")) return;
+  const today = new Date();
+  if (!appointmentField("appointmentDate").value) appointmentField("appointmentDate").value = toInputDate(today);
+  if (!appointmentField("appointmentNo").value) {
+    const sequence = String(nextAppointmentSequence()).padStart(3, "0");
+    appointmentField("appointmentNo").value = `ETS/APL/${sequence}/${getFinancialYearCode(today)}`;
+  }
+}
+
+function collectAppointmentData() {
+  const appointment = {};
+  document.querySelectorAll("[data-appointment-field]").forEach((field) => {
+    appointment[field.dataset.appointmentField] = field.value.trim();
+  });
+  appointment.status = "Issued";
+  appointment.id = editingAppointmentId || `APPOINTMENT-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  appointment.confirmedAt = new Date().toISOString();
+  appointment.updatedAt = appointment.confirmedAt;
+  return appointment;
+}
+
+function setAppointmentFormData(appointment) {
+  editingAppointmentId = appointment.id;
+  document.querySelectorAll("[data-appointment-field]").forEach((field) => {
+    const value = appointment[field.dataset.appointmentField];
+    if (value !== undefined && value !== null) field.value = value;
+  });
+  document.getElementById("appointmentFormTitle").textContent = `Edit ${appointment.appointmentNo}`;
+  renderAppointmentPreview();
+}
+
+function resetAppointmentForm() {
+  editingAppointmentId = null;
+  const form = document.getElementById("appointmentForm");
+  if (!form) return;
+  form.reset();
+  appointmentField("appointmentNo").value = "";
+  appointmentField("appointmentDate").value = "";
+  document.getElementById("appointmentFormTitle").textContent = "New appointment letter";
+  ensureAppointmentDefaults();
+  renderAppointmentPreview();
+}
+
+function validateAppointmentLetter(appointment) {
+  if (!appointment.appointmentNo || !appointment.appointmentDate || !appointment.employeeName || !appointment.employeeAddress || !appointment.designation || !appointment.joiningDate) {
+    return "Complete the employee name, address, designation, appointment date and joining date.";
+  }
+  if (!appointment.companyName || !appointment.employmentLocation || !appointment.hrName) {
+    return "Complete the company name, place of employment and HR representative.";
+  }
+  if (!Number.isFinite(Number(appointment.grossSalaryMonthly)) || Number(appointment.grossSalaryMonthly) < 0) {
+    return "Enter a valid monthly gross salary.";
+  }
+  return "";
+}
+
+function appointmentDate(value) {
+  if (!value) return "—";
+  const [year, month, day] = String(value).split("-");
+  return year && month && day ? `${day}/${month}/${year}` : escapeHtml(value);
+}
+
+function appointmentMoney(value) {
+  const cleaned = String(value ?? "").replace(/,/g, "").trim();
+  if (!cleaned) return "—";
+  const number = Number(cleaned);
+  return Number.isFinite(number) ? number.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : escapeHtml(cleaned.toUpperCase());
+}
+
+function appointmentAnnual(value) {
+  const cleaned = String(value ?? "").replace(/,/g, "").trim();
+  const number = Number(cleaned);
+  return cleaned && Number.isFinite(number)
+    ? (number * 12).toLocaleString("en-IN", { maximumFractionDigits: 2 })
+    : appointmentMoney(cleaned);
+}
+
+function titleCaseNumber(value) {
+  const word = numberWord(Number(value || 0));
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+function appointmentPageHeader(data, pageNumber) {
+  return `<div class="appointment-page-header"><img src="assets/electrotech-services-logo.png" alt="Electrotech Services"><strong>${escapeHtml(data.appointmentNo || "Appointment reference")}</strong></div>`;
+}
+
+function appointmentPageFooter(pageNumber) {
+  return `<div class="appointment-page-footer"><span>Electrotech Services · Appointment Letter</span><span>Page ${pageNumber} of 4</span></div>`;
+}
+
+function renderAppointmentPreview() {
+  const preview = document.getElementById("appointmentPreview");
+  if (!preview) return;
+  const data = collectAppointmentData();
+  const company = escapeHtml((data.companyName || "Electrotech Services").toUpperCase());
+  const employee = escapeHtml((data.employeeName || "Employee name").toUpperCase());
+  const designation = escapeHtml((data.designation || "Designation").toUpperCase());
+  const joiningDate = appointmentDate(data.joiningDate);
+  const probationMonths = escapeHtml(String(data.probationMonths || "0"));
+  const noticeMonths = escapeHtml(String(data.noticeMonths || "0"));
+  const leaveNoticeDays = escapeHtml(String(data.leaveNoticeDays || "0"));
+  const absenceDays = escapeHtml(String(data.absenceDays || "7"));
+  const grossMonthly = appointmentMoney(data.grossSalaryMonthly);
+  const grossAnnual = appointmentAnnual(data.grossSalaryMonthly);
+  const compensationRows = [
+    ["Basic Salary", data.grossSalaryMonthly],
+    ["House Rent Allowance", data.hraMonthly],
+    ["Conveyance Allowance", data.conveyanceMonthly],
+    ["Medical Reimbursement", data.medicalMonthly],
+    ["Special Allowance", data.specialMonthly],
+    ["Variable Pay*", data.variableMonthly]
+  ];
+
+  preview.innerHTML = `
+    <article class="appointment-page">
+      <div class="appointment-letterhead"><img src="assets/electrotech-services-logo.png" alt="Electrotech Services"><div class="appointment-letterhead-meta"><strong>${company}</strong><span>SM Adj 180, Industrial Estate</span><span>Baikampady, Mangaluru - 575011</span></div></div>
+      <div class="appointment-top-rule"></div>
+      <div class="appointment-control"><span>${appointmentDate(data.appointmentDate)}</span><strong>${escapeHtml(data.appointmentNo || "ETS/APL/---")}</strong></div>
+      <address class="appointment-recipient"><strong>${employee}</strong>${escapeHtml(data.employeeAddress || "Employee address")}${data.phone ? `\nPh: ${escapeHtml(data.phone)}` : ""}</address>
+      <h2 class="appointment-title">APPOINTMENT LETTER</h2>
+      <p>Dear ${employee},</p>
+      <p>Following your acceptance of our job offer, on behalf of the Management of <strong>${company}</strong>, we are pleased to appoint you as <strong>${designation}</strong>. The terms of your appointment are set out below.</p>
+      <section class="appointment-clause"><h3><span>1.</span> Place of Employment, Designation, Date of Joining, Timing, Roles &amp; Responsibilities and Reporting</h3>
+        <p class="appointment-subclause"><b>A. Place of Employment:</b> You will initially be posted at ${escapeHtml(data.employmentLocation || "the company office")}. You may be deputed to work with any of the Company's branches, associates, or any other organisation where the Company has business interests. You will be governed by the rules and regulations applicable to the establishment to which you are assigned.</p>
+        <p class="appointment-subclause"><b>B. Designation:</b> ${designation}</p>
+        <p class="appointment-subclause"><b>C. Date of Joining:</b> Your date of joining is ${joiningDate}.</p>
+        <p class="appointment-subclause"><b>D. Timing:</b> General shift timings are ${escapeHtml(data.workingHours || "as communicated")}. Flexibility to work according to shift schedules may be required based on business needs.</p>
+        <p class="appointment-subclause"><b>E. Duties &amp; Responsibilities:</b> ${escapeHtml(data.duties || "As assigned by Management.")}</p>
+        <p class="appointment-subclause"><b>F. Reporting Officer:</b> You shall report to ${escapeHtml(data.reportingOfficer || "the reporting officer assigned by Management")}.</p>
+      </section>
+      <section class="appointment-clause"><h3><span>2.</span> Compensation and Benefits</h3><p class="appointment-subclause"><b>A. Compensation:</b> You will receive a gross salary of Rs. <strong>${grossMonthly} (${escapeHtml(data.salaryWords || "")})</strong> per month, subject to tax deducted at source and any other applicable statutory deductions.</p></section>
+      <section class="appointment-clause"><h3><span>3.</span> Policy Briefing</h3><p class="appointment-subclause">You will comply with Company policies communicated during induction and with amendments communicated from time to time.</p></section>
+      ${appointmentPageFooter(1)}
+    </article>
+    <article class="appointment-page">
+      ${appointmentPageHeader(data, 2)}
+      <section class="appointment-clause"><h3><span>4.</span> Probation</h3><p>Your appointment is on probation for a period of ${titleCaseNumber(data.probationMonths)} (${probationMonths}) months from the date of joining. Your performance and conduct will be reviewed for confirmation of employment. If your performance is not satisfactory, the probation period may be extended at Management's discretion, or your services may be terminated with 15 days' notice from either side.</p></section>
+      <section class="appointment-clause"><h3><span>5.</span> Termination of Employment</h3>
+        <p>Your employment will commence on ${joiningDate}. The notice period is ${titleCaseNumber(data.noticeMonths)} (${noticeMonths}) months. ${escapeHtml(data.companyName || "The Company")} reserves the right to pay or recover salary in lieu of notice and may, at its discretion, relieve you before the notice period expires. If Management requires you to continue during the notice period, you are expected to do so.</p>
+        <p>If you resign by giving ${titleCaseNumber(data.noticeMonths)} (${noticeMonths}) months' notice, you must work for the full notice period, complete pending tasks, address all queries relating to your work, and complete the transfer of knowledge to the person nominated by your superior.</p>
+        <p>In the event of termination arising from disciplinary proceedings, no notice will be required from the Company's side. Leave permission should be obtained at least ${leaveNoticeDays} days in advance. In an emergency, you must inform the Company by call or message and provide supporting evidence if requested. If you are absent without authorisation or reasonable explanation for more than ${absenceDays} consecutive days, it may be treated as abandonment of service and the Company may terminate your appointment, subject to applicable law.</p>
+        <p>During employment and after leaving the Company, you must avoid conflicts of interest and comply with all lawful post-employment obligations set out in Company policy and applicable agreements.</p>
+      </section>
+      <section class="appointment-clause"><h3><span>6.</span> Confidentiality</h3>
+        <p class="appointment-subclause"><b>A.</b> In the course of business, the Company and its employees are required to maintain the confidentiality of information relating to customers, suppliers, operations, business activities, internal systems, and policies. Such information must not be used for personal gain or for the benefit of any third party unless authorised by the Company.</p>
+        <p class="appointment-subclause"><b>B.</b> Information, observations, and data concerning the Company or its customers remain their property. You may not copy, reproduce, publish, distribute, adapt, modify, or amend such information without prior written consent.</p>
+        <p class="appointment-subclause"><b>C.</b> Compensation information is private and confidential and may be discussed only with persons authorised to receive it.</p>
+      </section>
+      ${appointmentPageFooter(2)}
+    </article>
+    <article class="appointment-page">
+      ${appointmentPageHeader(data, 3)}
+      <section class="appointment-clause"><h3><span>7.</span> Verification and Fitness</h3><p>Your appointment may be cancelled if information furnished by you is found to be false or if you are found medically unfit for the role. Release of salary may be subject to submission of documents required by the Company.</p></section>
+      <section class="appointment-clause"><h3><span>8.</span> Jurisdiction</h3><p>Any dispute or misunderstanding concerning your employment and its terms that requires legal recourse or arbitration will be subject to the jurisdiction of ${escapeHtml(data.jurisdiction || "Mangalore Courts")}.</p></section>
+      <p>It is understood that your date of joining ${escapeHtml(data.companyName || "Electrotech Services")} will be no later than <strong>${joiningDate}</strong>, unless otherwise mutually agreed. Please confirm your acceptance by signing below.</p>
+      <p>On behalf of the Management of <strong>${company}</strong>, I wish you a long and mutually beneficial association with us.</p>
+      <p>Yours sincerely,</p>
+      <div class="appointment-signatures">
+        <div class="appointment-signature"><strong>${escapeHtml(data.hrName || "HR Representative")}</strong><span>Human Resources</span><strong>For ${company}</strong></div>
+        <div class="appointment-signature"><div class="appointment-signature-line"></div><strong>${employee}</strong><span>Date: ${joiningDate}</span></div>
+      </div>
+      <p class="appointment-note">I have read, understood, and accept the above terms and conditions and the attached annexure.</p>
+      ${appointmentPageFooter(3)}
+    </article>
+    <article class="appointment-page">
+      ${appointmentPageHeader(data, 4)}
+      <div class="appointment-annexure-title"><h2>ANNEXURE - A</h2><p>Compensation Details</p></div>
+      <p>Dear ${escapeHtml(data.employeeName || "Employee")},</p>
+      <p>Further to our Appointment Letter Ref. No. <strong>${escapeHtml(data.appointmentNo || "—")}</strong> dated ${appointmentDate(data.appointmentDate)}, we are pleased to confirm that your compensation package is as follows:</p>
+      <table class="appointment-comp-table"><thead><tr><th>Salary components</th><th>Amount<br>(Per Month)</th><th>Amount<br>(Per Annum)</th></tr></thead><tbody>
+        ${compensationRows.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${appointmentMoney(value)}</td><td>${appointmentAnnual(value)}</td></tr>`).join("")}
+        <tr><td>Employer Contribution (ESI)</td><td>${escapeHtml(data.esiRate || "NIL")}</td><td>${escapeHtml(data.esiRate || "NIL")}</td></tr>
+        <tr class="appointment-total"><td>(A) Gross Salary - Total</td><td>${grossMonthly}</td><td>${grossAnnual}</td></tr>
+      </tbody></table>
+      <p class="appointment-note"><strong>Note - Gratuity:</strong> ${escapeHtml(data.gratuityNote || "As per applicable law and Company rules.")}</p>
+      <p>You are entitled to the above benefits as applicable to employees of your category under the Company's rules and regulations.</p>
+      <p>Yours sincerely,</p>
+      <div class="appointment-signatures">
+        <div class="appointment-signature"><strong>${escapeHtml(data.hrName || "HR Representative")}</strong><span>Human Resources</span><strong>For ${company}</strong></div>
+        <div class="appointment-signature"><div class="appointment-signature-line"></div><strong>${employee}</strong><span>Date: ${appointmentDate(data.appointmentDate)}</span></div>
+      </div>
+      ${appointmentPageFooter(4)}
+    </article>`;
+}
+
+async function confirmAppointmentLetter() {
+  const appointment = collectAppointmentData();
+  const validationError = validateAppointmentLetter(appointment);
+  if (validationError) {
+    showSaveModal("Check appointment letter", validationError);
+    return;
+  }
+  loadLocalAppointments();
+  const existingIndex = appointmentLetters.findIndex((item) => item.id === appointment.id);
+  if (existingIndex >= 0) appointmentLetters[existingIndex] = appointment;
+  else appointmentLetters.unshift(appointment);
+  rememberAppointmentSequence(appointment.appointmentNo, appointment.updatedAt);
+  persistLocalAppointments();
+  editingAppointmentId = appointment.id;
+  document.getElementById("appointmentFormTitle").textContent = `Edit ${appointment.appointmentNo}`;
+  refreshDashboardMetrics();
+  try {
+    await sheetsApiRequest("saveAppointment", { appointment });
+    showSaveModal("Appointment confirmed", `${appointment.appointmentNo} for ${appointment.employeeName} is stored in the separate appointment_letters Google Sheet.`);
+  } catch (error) {
+    console.warn(error);
+    showSaveModal("Appointment saved locally", `${appointment.appointmentNo} is available in this browser. Deploy the updated Google Apps Script to sync it to the separate appointment_letters sheet.`);
+  }
+}
+
+function editAppointmentLetter(id) {
+  loadLocalAppointments();
+  const appointment = appointmentLetters.find((item) => item.id === id);
+  if (!appointment) return;
+  navigateTo("appointments", null, { keepDraft: true });
+  setAppointmentFormData(appointment);
+}
+
+function renderAppointmentRecords() {
+  const table = document.getElementById("appointmentRecordsTable");
+  if (!table) return;
+  const search = (document.getElementById("appointmentRecordsSearch")?.value || "").toLowerCase().trim();
+  const filtered = appointmentLetters.filter((appointment) => [appointment.appointmentNo, appointment.employeeName, appointment.designation, appointment.reportingOfficer].join(" ").toLowerCase().includes(search));
+  document.getElementById("appointmentRecordCount").textContent = `${filtered.length} appointment${filtered.length === 1 ? "" : "s"}`;
+  table.innerHTML = `<thead><tr><th>Appointment no.</th><th>Employee</th><th>Designation</th><th>Appointment date</th><th>Joining date</th><th>Status</th><th>Actions</th></tr></thead><tbody>${filtered.length ? filtered.map((appointment) => `<tr><td>${escapeHtml(appointment.appointmentNo)}</td><td>${escapeHtml(appointment.employeeName)}</td><td>${escapeHtml(appointment.designation)}</td><td>${formatReportDate(appointment.appointmentDate)}</td><td>${formatReportDate(appointment.joiningDate)}</td><td><span class="status-pill status-pill--ok">${escapeHtml(appointment.status || "Issued")}</span></td><td><div class="record-actions"><button onclick="editAppointmentLetter('${escapeHtml(appointment.id)}')">View / edit</button></div></td></tr>`).join("") : `<tr><td colspan="7" class="empty-state">No appointment letters yet. Create and confirm the first appointment letter to start the register.</td></tr>`}</tbody>`;
+}
+
+function exportAppointmentsCsv() {
+  loadLocalAppointments();
+  if (!appointmentLetters.length) {
+    showSaveModal("Nothing to export", "Create and confirm at least one appointment letter first.");
+    return;
+  }
+  const headers = ["Appointment No", "Appointment Date", "Employee Name", "Employee Address", "Phone", "Designation", "Joining Date", "Reporting Officer", "Working Hours", "Employment Location", "Gross Monthly Salary", "Salary in Words", "Probation Months", "Notice Months", "Company", "HR Representative", "Status", "Confirmed At", "Updated At"];
+  const lines = [headers.map(csvCell).join(",")];
+  appointmentLetters.forEach((appointment) => lines.push([
+    appointment.appointmentNo, appointment.appointmentDate, appointment.employeeName, appointment.employeeAddress,
+    appointment.phone, appointment.designation, appointment.joiningDate, appointment.reportingOfficer,
+    appointment.workingHours, appointment.employmentLocation, appointment.grossSalaryMonthly, appointment.salaryWords,
+    appointment.probationMonths, appointment.noticeMonths, appointment.companyName, appointment.hrName,
+    appointment.status, appointment.confirmedAt, appointment.updatedAt
+  ].map(csvCell).join(",")));
+  const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Electrotech_Services_Appointment_Letters_${toInputDate(new Date())}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function printAppointmentLetter() {
+  renderAppointmentPreview();
+  document.body.classList.remove("print-calibration", "print-performance", "print-offer");
+  document.body.classList.add("print-appointment");
+  window.print();
+}
+
+function setupAppointmentAutomation() {
+  loadLocalAppointments();
+  ensureAppointmentDefaults();
+  document.getElementById("appointmentForm").addEventListener("input", renderAppointmentPreview);
+  document.getElementById("appointmentRecordsSearch").addEventListener("input", renderAppointmentRecords);
+  window.addEventListener("afterprint", () => document.body.classList.remove("print-calibration", "print-performance", "print-offer", "print-appointment"));
+  renderAppointmentPreview();
 }
 
 setupCalibrationAutomation();
 setupPerformanceAutomation();
 setupOfferAutomation();
+setupAppointmentAutomation();

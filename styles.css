@@ -53,6 +53,8 @@ button { border: 0; cursor: pointer; }
 .nav-group.open .nav-group-toggle b { transform: rotate(180deg); }
 .nav-submenu { display: none; gap: 5px; margin: 5px 0 0 34px; }
 .nav-group.open .nav-submenu { display: grid; }
+.nav-subsection-title { padding: 8px 12px 2px; color: #929cad; font-size: 9px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.nav-subsection-title:not(:first-child) { margin-top: 5px; border-top: 1px solid var(--line); }
 .nav-subbtn { min-height: 36px; padding: 0 12px; border-radius: 7px; color: #687386; background: transparent; text-align: left; font-size: 12px; font-weight: 700; }
 .nav-subbtn:hover { color: var(--brand-blue); background: var(--brand-blue-soft); }
 .nav-subbtn.active { color: #fff; background: var(--brand-blue); }
@@ -246,6 +248,43 @@ tr.primary { background: var(--green-soft); font-weight: 850; } tr.secondary { b
 .offer-signature { width: 43%; display: grid; gap: 18px; margin: 36px 3% 0 auto; color: #302f88; }
 .offer-signature span { color: #242424; }
 
+.appointment-preview { display: grid; gap: 20px; }
+.appointment-page { width: 100%; min-height: 900px; position: relative; overflow: hidden; padding: 32px 38px 60px; border: 1px solid #c9ced5; background: #fff; box-shadow: 0 15px 40px rgba(26,34,45,.1); color: #202124; font-family: Arial, "Segoe UI", sans-serif; font-size: clamp(9px, .72vw, 11.5px); line-height: 1.42; }
+.appointment-letterhead { display: grid; grid-template-columns: minmax(180px,1fr) minmax(180px,1fr); align-items: center; gap: 18px; padding-bottom: 12px; border-bottom: 3px solid #29277e; }
+.appointment-letterhead img { width: min(340px,100%); height: 58px; object-fit: contain; object-position: left center; }
+.appointment-letterhead-meta { display: grid; gap: 3px; color: #555d6c; text-align: right; font-size: .9em; }
+.appointment-top-rule { height: 3px; margin-bottom: 16px; background: #ed1c24; }
+.appointment-control { display: flex; justify-content: space-between; gap: 20px; margin: 16px 0 13px; }
+.appointment-control strong { color: #29277e; text-decoration: underline; }
+.appointment-recipient { margin-bottom: 14px; font-style: normal; white-space: pre-line; }
+.appointment-recipient strong { display: block; font-size: 1.05em; }
+.appointment-title { width: max-content; margin: 14px auto 17px; padding-bottom: 3px; border-bottom: 2px solid #202124; font-size: 1.55em; letter-spacing: .02em; }
+.appointment-page p { margin: 0 0 11px; text-align: justify; }
+.appointment-clause { margin: 15px 0 0; }
+.appointment-clause h3 { display: flex; gap: 8px; margin: 0 0 8px; color: #29277e; font-size: 1.04em; line-height: 1.35; }
+.appointment-clause h3 span { color: #ed1c24; }
+.appointment-subclause { margin-left: 22px !important; }
+.appointment-subclause b { color: #25246f; }
+.appointment-page-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; padding-bottom: 8px; border-bottom: 2px solid #29277e; color: #29277e; }
+.appointment-page-header img { width: 190px; height: 38px; object-fit: contain; object-position: left center; }
+.appointment-page-header strong { font-size: .9em; }
+.appointment-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 38px; margin-top: 34px; }
+.appointment-signature { min-height: 118px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; }
+.appointment-signature-line { width: 190px; margin-bottom: 5px; border-top: 1px solid #202124; }
+.appointment-signature:last-child { align-items: flex-end; text-align: left; }
+.appointment-signature:last-child > * { width: 190px; }
+.appointment-annexure-title { margin: 4px 0 18px; text-align: center; }
+.appointment-annexure-title h2 { margin: 0; color: #29277e; font-size: 1.45em; }
+.appointment-annexure-title p { margin: 2px 0 0; text-align: center; font-size: 1.15em; }
+.appointment-comp-table { width: 100%; margin: 16px 0 18px; table-layout: fixed; border: 1px solid #73798a; }
+.appointment-comp-table th,.appointment-comp-table td { padding: 7px 9px; border: 1px solid #73798a; color: #202124; background: #fff; font-family: inherit; text-transform: none; letter-spacing: 0; }
+.appointment-comp-table th { color: #fff; background: #29277e; font-size: .95em; }
+.appointment-comp-table th:first-child { width: 56%; }
+.appointment-comp-table td:first-child { text-align: left; }
+.appointment-comp-table .appointment-total td { color: #29277e; background: #f0f1fb; font-weight: 900; }
+.appointment-note { padding: 10px 12px; border-left: 3px solid #ed1c24; background: #f8f8fb; }
+.appointment-page-footer { position: absolute; right: 38px; bottom: 25px; left: 38px; display: flex; justify-content: space-between; gap: 18px; padding-top: 8px; border-top: 1px solid #cfd3df; color: #73798a; font-size: .85em; }
+
 .records-controls { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: #f8fafb; }
 .records-controls input { max-width: 440px; background: #fff; }.records-controls span { color: var(--muted); font-size: 12px; font-weight: 800; }
 .records-table td { text-align: left; }.records-table td:first-child { font-weight: 850; color: var(--teal); }.record-actions { display: flex; gap: 6px; }
@@ -255,7 +294,7 @@ tr.primary { background: var(--green-soft); font-weight: 850; } tr.secondary { b
 .modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 18px; background: rgba(18,30,45,.58); }
 .modal-box { width: min(370px,100%); padding: 22px; border-radius: 11px; background: #fff; box-shadow: var(--shadow); text-align: center; }.modal-box h3 { margin-bottom: 14px; }.modal-box input { margin-bottom: 10px; }.modal-box .primary-action,.modal-box .secondary-action { width: 100%; }.modal-box .secondary-action { margin-top: 8px; } #passError { color: var(--red); font-weight: 750; }
 
-@media (max-width: 1380px) { .report-workspace { grid-template-columns: 1fr; }.preview-panel { position: static; }.calibration-sheet,.performance-sheet,.offer-sheet { max-width: 760px; margin: 0 auto; font-size: 10px; } }
+@media (max-width: 1380px) { .report-workspace { grid-template-columns: 1fr; }.preview-panel { position: static; }.calibration-sheet,.performance-sheet,.offer-sheet,.appointment-page { max-width: 760px; margin-right: auto; margin-left: auto; font-size: 10px; } }
 @media (max-width: 900px) {
   .portal-shell { grid-template-columns: 1fr; }
   .sidebar { position: fixed; z-index: 1200; inset: 0 auto 0 0; width: min(300px,86vw); height: 100vh; padding: 22px 18px; overflow-y: auto; transform: translateX(-105%); transition: transform .22s ease; box-shadow: 18px 0 48px rgba(18,30,45,.2); }
@@ -301,7 +340,7 @@ tr.primary { background: var(--green-soft); font-weight: 850; } tr.secondary { b
   .hero-card .primary-action { width: 100%; }
   .records-controls { align-items: stretch; flex-direction: column; }
   .calibration-sheet,.performance-sheet { min-width: 590px; }
-  .offer-sheet { min-width: 590px; }
+  .offer-sheet,.appointment-page { min-width: 590px; }
   .preview-panel { overflow-x: auto; }
   .result-grid { grid-template-columns: 1fr; }
   .field-inline { grid-template-columns: 1fr; }
@@ -317,9 +356,13 @@ tr.primary { background: var(--green-soft); font-weight: 850; } tr.secondary { b
   body { background: #fff; }
   .sidebar,.topbar,.report-toolbar,.report-form,.preview-label,.modal,.workspace > * { display: none !important; }
   .portal-shell,.portal-main,.workspace,.report-workspace,.preview-panel { display: block !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
-  body.print-calibration #reportBuilder, body.print-performance #performanceReportBuilder, body.print-offer #offerBuilder { display: block !important; }
+  body.print-calibration #reportBuilder, body.print-performance #performanceReportBuilder, body.print-offer #offerBuilder, body.print-appointment #appointmentBuilder { display: block !important; }
   .calibration-sheet,.performance-sheet { width: 100%; min-height: 0; border: 0; box-shadow: none; padding: 8mm 9mm; font-size: 10.5pt; }
   .offer-sheet { width: 100%; min-height: 277mm; border: 0; box-shadow: none; padding: 8mm 9mm 20mm; font-size: 10.5pt; }
   .offer-bottom-rule { right: 9mm; bottom: 7mm; left: 9mm; }
+  .appointment-preview { display: block !important; }
+  .appointment-page { width: 100%; min-height: 277mm; margin: 0 !important; padding: 8mm 10mm 17mm; border: 0; box-shadow: none; font-size: 9.3pt; break-after: page; page-break-after: always; }
+  .appointment-page:last-child { break-after: auto; page-break-after: auto; }
+  .appointment-page-footer { right: 10mm; bottom: 6mm; left: 10mm; }
   @page { size: A4 portrait; margin: 7mm; }
 }

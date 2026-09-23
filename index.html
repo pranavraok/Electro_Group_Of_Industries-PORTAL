@@ -24,11 +24,15 @@
             <button class="nav-subbtn" data-screen="performanceRecords" onclick="openPerformanceReportRecords()">Performance records</button>
           </div>
         </div>
-        <div class="nav-group" data-nav-group="offers">
-          <button class="nav-btn nav-group-toggle" type="button" onclick="toggleOfferNav()"><span>04</span>Offer letters <b aria-hidden="true">⌄</b></button>
+        <div class="nav-group" data-nav-group="hrLetters">
+          <button class="nav-btn nav-group-toggle" type="button" onclick="toggleHrLettersNav()"><span>04</span>HR letters <b aria-hidden="true">⌄</b></button>
           <div class="nav-submenu">
+            <div class="nav-subsection-title">Offer letters</div>
             <button class="nav-subbtn" data-screen="offers" onclick="openOfferBuilder()">New offer</button>
-            <button class="nav-subbtn" data-screen="offerRecords" onclick="openOfferRecords()">Records</button>
+            <button class="nav-subbtn" data-screen="offerRecords" onclick="openOfferRecords()">Offer records</button>
+            <div class="nav-subsection-title">Appointment letters</div>
+            <button class="nav-subbtn" data-screen="appointments" onclick="openAppointmentBuilder()">New appointment</button>
+            <button class="nav-subbtn" data-screen="appointmentRecords" onclick="openAppointmentRecords()">Appointment records</button>
           </div>
         </div>
       </nav>
@@ -45,18 +49,19 @@
 
       <main class="workspace">
         <section id="dashboard" class="app-view">
-          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div><div class="overview-actions"><button class="primary-action" onclick="openHeaterModule()">Heater calculator</button><button class="primary-action" onclick="openReportBuilder()">New calibration report</button><button class="primary-action" onclick="openPerformanceReportBuilder()">New performance report</button><button class="primary-action" onclick="openOfferBuilder()">New offer letter</button></div></div>
+          <div class="overview-heading"><div><span class="section-kicker">OVERVIEW</span><h2>Operations dashboard</h2></div></div>
           <div class="metric-grid">
             <article class="metric-card"><span>Total reports</span><strong id="dashboardTotalReports">0</strong><small>Calibration records</small></article>
             <article class="metric-card"><span>Passed</span><strong id="dashboardPassedReports">0</strong><small>Reports within limit</small></article>
             <article class="metric-card"><span>Due soon</span><strong id="dashboardDueSoon">0</strong><small>Next 30 days</small></article>
             <article class="metric-card"><span>Heater runs</span><strong id="dashboardHeaterRuns">0</strong><small>Completed calculations</small></article>
             <article class="metric-card"><span>Offer letters</span><strong id="dashboardOfferLetters">0</strong><small>Confirmed records</small></article>
+            <article class="metric-card"><span>Appointment letters</span><strong id="dashboardAppointmentLetters">0</strong><small>Issued records</small></article>
             <article class="metric-card"><span>Performance</span><strong id="dashboardPerformanceReports">0</strong><small>Equipment reports</small></article>
           </div>
           <div class="dashboard-grid">
             <article class="recent-card"><div class="card-heading"><div><h3>Recent reports</h3><small>Latest calibration records</small></div><button class="text-action" onclick="openReportRecords()">View all</button></div><div id="dashboardRecentReports" class="recent-list"></div></article>
-            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true"><h3>Quick actions</h3><button onclick="openReportBuilder()">New calibration <span>→</span></button><button onclick="openPerformanceReportBuilder()">New performance <span>→</span></button><button onclick="openOfferBuilder()">New offer letter <span>→</span></button><button onclick="openHeaterModule()">Heater calculator <span>→</span></button><button onclick="openReportRecords()">Calibration records <span>→</span></button><button onclick="openPerformanceReportRecords()">Performance records <span>→</span></button><button onclick="openOfferRecords()">Offer records <span>→</span></button></article>
+            <article class="quick-card"><img src="assets/electro-group-logo.png" alt="" aria-hidden="true"><h3>Quick actions</h3><button onclick="openReportBuilder()">New calibration <span>→</span></button><button onclick="openPerformanceReportBuilder()">New performance <span>→</span></button><button onclick="openOfferBuilder()">New offer letter <span>→</span></button><button onclick="openAppointmentBuilder()">New appointment letter <span>→</span></button><button onclick="openHeaterModule()">Heater calculator <span>→</span></button><button onclick="openReportRecords()">Calibration records <span>→</span></button><button onclick="openPerformanceReportRecords()">Performance records <span>→</span></button><button onclick="openOfferRecords()">Offer records <span>→</span></button><button onclick="openAppointmentRecords()">Appointment records <span>→</span></button></article>
           </div>
         </section>
 
@@ -220,6 +225,62 @@ ESI Registration Number</textarea></div>
         <section id="offerRecordsView" class="panel hidden">
           <div class="records-header"><div><span class="section-kicker">OFFER LETTER REGISTER</span><h2>Confirmed offer letters</h2><p>Every confirmed offer is stored separately from calibration records.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportOffersCsv()">Export for Excel</button><button class="primary-action" onclick="openOfferBuilder()">New offer</button></div></div>
           <div class="records-controls"><input id="offerRecordsSearch" type="search" placeholder="Search offer no., candidate or designation"><span id="offerRecordCount"></span></div><div class="table-wrapper"><table id="offerRecordsTable" class="records-table"></table></div>
+        </section>
+
+        <section id="appointmentBuilder" class="hidden">
+          <div class="report-toolbar"><div><span class="section-kicker">HR AUTOMATION</span><h2 id="appointmentFormTitle">New appointment letter</h2><p>Built from the supplied four-page appointment letter with a separate register and print-ready preview.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="resetAppointmentForm()">New appointment</button><button class="ghost-btn" onclick="printAppointmentLetter()">Print / PDF</button><button class="primary-action" onclick="confirmAppointmentLetter()">Confirm &amp; save</button></div></div>
+          <div class="report-workspace">
+            <form id="appointmentForm" class="report-form" onsubmit="return false">
+              <div class="form-section">
+                <div class="form-section-title"><span>01</span><div><h3>Employee &amp; appointment</h3><p>The appointment number and date are generated automatically.</p></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field auto-field"><label>Appointment record no.</label><input data-appointment-field="appointmentNo" required readonly></div>
+                  <div class="form-field auto-field"><label>Appointment date</label><input data-appointment-field="appointmentDate" type="date" required></div>
+                  <div class="form-field"><label>Employee name</label><input data-appointment-field="employeeName" required placeholder="Full name"></div>
+                  <div class="form-field"><label>Phone number</label><input data-appointment-field="phone" placeholder="+91 9876543210"></div>
+                  <div class="form-field form-field--full"><label>Employee address</label><textarea data-appointment-field="employeeAddress" rows="3" required placeholder="Complete residential address"></textarea></div>
+                  <div class="form-field"><label>Designation</label><input data-appointment-field="designation" required placeholder="DESIGN / PRODUCTION ENGINEER"></div>
+                  <div class="form-field"><label>Date of joining</label><input data-appointment-field="joiningDate" type="date" required></div>
+                  <div class="form-field"><label>Reporting officer</label><input data-appointment-field="reportingOfficer" value="Ms. Shivani"></div>
+                  <div class="form-field"><label>General shift timing</label><input data-appointment-field="workingHours" value="9:00 AM - 6:00 PM"></div>
+                </div>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>02</span><div><h3>Employment terms</h3><p>These values feed the employment, probation and termination clauses.</p></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Company name</label><input data-appointment-field="companyName" value="Electrotech Services"></div>
+                  <div class="form-field"><label>HR representative</label><input data-appointment-field="hrName" value="Mr. Vinod Kumar"></div>
+                  <div class="form-field form-field--full"><label>Place of employment</label><textarea data-appointment-field="employmentLocation" rows="2">Electrotech Services, SM Adj 180, Industrial Estate, Baikampady, Mangaluru-575011</textarea></div>
+                  <div class="form-field form-field--full"><label>Duties &amp; responsibilities</label><textarea data-appointment-field="duties" rows="3">You will be responsible for all activities related to your designation, as well as any additional roles and responsibilities entrusted by Management from time to time.</textarea></div>
+                  <div class="form-field"><label>Probation period (months)</label><input data-appointment-field="probationMonths" type="number" min="0" value="6"></div>
+                  <div class="form-field"><label>Notice period (months)</label><input data-appointment-field="noticeMonths" type="number" min="0" value="2"></div>
+                  <div class="form-field"><label>Emergency leave notice (days)</label><input data-appointment-field="leaveNoticeDays" type="number" min="0" value="2"></div>
+                  <div class="form-field"><label>Unauthorised absence limit (days)</label><input data-appointment-field="absenceDays" type="number" min="1" value="7"></div>
+                  <div class="form-field"><label>Legal jurisdiction</label><input data-appointment-field="jurisdiction" value="Mangalore Courts"></div>
+                </div>
+              </div>
+              <div class="form-section">
+                <div class="form-section-title"><span>03</span><div><h3>Compensation annexure</h3><p>Enter monthly values; annual figures are calculated automatically. Use NIL where not applicable.</p></div></div>
+                <div class="report-field-grid two">
+                  <div class="form-field"><label>Gross / basic salary per month (Rs.)</label><input data-appointment-field="grossSalaryMonthly" type="number" min="0" value="20000"></div>
+                  <div class="form-field"><label>Salary in words</label><input data-appointment-field="salaryWords" value="Twenty Thousand"></div>
+                  <div class="form-field"><label>House rent allowance</label><input data-appointment-field="hraMonthly" value="NIL"></div>
+                  <div class="form-field"><label>Conveyance allowance</label><input data-appointment-field="conveyanceMonthly" value="NIL"></div>
+                  <div class="form-field"><label>Medical reimbursement</label><input data-appointment-field="medicalMonthly" value="NIL"></div>
+                  <div class="form-field"><label>Special allowance</label><input data-appointment-field="specialMonthly" value="NIL"></div>
+                  <div class="form-field"><label>Variable pay</label><input data-appointment-field="variableMonthly" value="NIL"></div>
+                  <div class="form-field"><label>Employer contribution (ESI)</label><input data-appointment-field="esiRate" value="0.75%"></div>
+                  <div class="form-field form-field--full"><label>Gratuity note</label><textarea data-appointment-field="gratuityNote" rows="2">As per the Payment of Gratuity Act, 1972 and Rules thereunder.</textarea></div>
+                </div>
+              </div>
+            </form>
+            <aside class="preview-panel"><div class="preview-label"><span>LIVE APPOINTMENT LETTER</span><small>Four-page print-ready preview</small></div><div id="appointmentPreview" class="appointment-preview"></div></aside>
+          </div>
+        </section>
+
+        <section id="appointmentRecordsView" class="panel hidden">
+          <div class="records-header"><div><span class="section-kicker">APPOINTMENT LETTER REGISTER</span><h2>Issued appointment letters</h2><p>Appointment letters are stored independently from offer letters.</p></div><div class="toolbar-actions"><button class="ghost-btn" onclick="exportAppointmentsCsv()">Export for Excel</button><button class="primary-action" onclick="openAppointmentBuilder()">New appointment</button></div></div>
+          <div class="records-controls"><input id="appointmentRecordsSearch" type="search" placeholder="Search appointment no., employee or designation"><span id="appointmentRecordCount"></span></div><div class="table-wrapper"><table id="appointmentRecordsTable" class="records-table"></table></div>
         </section>
 
         <section id="dbEditor" class="panel hidden"><div class="material-bar"><h3 id="dbTitle">Edit database</h3><button class="back-btn" onclick="backToLanding()">Back</button></div><div class="table-wrapper"><table id="dbTable"></table></div><button id="saveBtn" class="primary-action table-save" onclick="saveDatabase()">Save changes</button></section>
