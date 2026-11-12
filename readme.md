@@ -1,4 +1,4 @@
-# Electro Group of Industries — Operations & Automation
+# Electro Group of Industries - Operations & Automation
 
 A browser-based engineering and calibration workflow for ELECTRO GROUP OF INDUSTRIES. It combines the existing heater-coil calculator with a pre-built calibration report, editable live preview, report register, and spreadsheet export.
 

@@ -374,7 +374,7 @@ function updateBrandContext(servicesActive) {
   document.getElementById("sidebarNoteName").textContent = servicesActive ? "Electrotech Services" : "Electro Group";
   document.getElementById("sidebarNoteText").textContent = servicesActive ? "Business services" : "Engineering operations";
   document.getElementById("topbarEyebrow").textContent = servicesActive ? "ELECTROTECH SERVICES" : "ELECTRO GROUP OF INDUSTRIES";
-  document.title = servicesActive ? "Electrotech Services — Automation" : "Electro Group of Industries — Operations & Automation";
+  document.title = servicesActive ? "Electrotech Services - Automation" : "Electro Group of Industries - Operations & Automation";
 }
 
 function saveHistoryState(screen, material = activeMaterial, replace = false) {
@@ -790,7 +790,7 @@ function setupAutoCalculation() {
   // Detect manual override on Core OD field
   coreODInput.addEventListener('input', () => {
     if (autoCoreODCheckbox.checked) {
-      // User typed into the field — switch to manual override
+      // User typed into the field - switch to manual override
       autoCoreODCheckbox.checked = false;
       coreODOverridden = true;
       coreODStatusEl.innerHTML = '<div class="cs-row cs-warn">Manual override active</div>';

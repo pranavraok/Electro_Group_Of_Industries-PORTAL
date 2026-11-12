@@ -17,10 +17,10 @@ The spreadsheet already contains these two wire-data tabs:
 
 The updated backend also creates and maintains:
 
-- `calibration_reports` — one searchable row per report, with the complete editable report stored in the `payload_json` column
-- `performance_reports` — one searchable row per linked performance report, including calculated readings and results in `payload_json`
-- `offer_letters` — one searchable row per confirmed offer, with every editable placeholder stored in the `payload_json` column
-- `appointment_letters` — one searchable row per issued appointment letter, stored independently from offers with the complete four-page letter data in `payload_json`
+- `calibration_reports` - one searchable row per report, with the complete editable report stored in the `payload_json` column
+- `performance_reports` - one searchable row per linked performance report, including calculated readings and results in `payload_json`
+- `offer_letters` - one searchable row per confirmed offer, with every editable placeholder stored in the `payload_json` column
+- `appointment_letters` - one searchable row per issued appointment letter, stored independently from offers with the complete four-page letter data in `payload_json`
 
 Reads are public so the calculator can load. Wire database writes require the `ADMIN_PASSWORD` value in the server-side `Code.gs`; do not put that password in the website files. After changing `Code.gs`, create a new Web App version from **Deploy > Manage deployments** so the live backend receives the change.
 
