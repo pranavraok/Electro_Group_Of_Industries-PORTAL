@@ -22,6 +22,6 @@ The updated backend also creates and maintains:
 - `offer_letters` — one searchable row per confirmed offer, with every editable placeholder stored in the `payload_json` column
 - `appointment_letters` — one searchable row per issued appointment letter, stored independently from offers with the complete four-page letter data in `payload_json`
 
-Reads are public so the calculator can load. Writes require the admin password stored privately in Apps Script properties. After changing `Code.gs`, create a new Web App version from **Deploy > Manage deployments** so the live backend receives the change.
+Reads are public so the calculator can load. Wire database writes require the `ADMIN_PASSWORD` value in the server-side `Code.gs`; do not put that password in the website files. After changing `Code.gs`, create a new Web App version from **Deploy > Manage deployments** so the live backend receives the change.
 
 Calibration, performance-report, offer-letter, and appointment-letter saves are designed for this internal operations interface and do not use the wire-database admin password. If the site will be public, restrict the Web App deployment to your organisation before using shared record storage.

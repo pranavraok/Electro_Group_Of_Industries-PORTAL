@@ -1,0 +1,30 @@
+{
+  "index.html": {
+    "sha256": "a9535d1a2e191044b75e0a5e8ce320b638b74a4fea3a2b29d74be74b34588f43",
+    "lines": 778
+  },
+  "script.js": {
+    "sha256": "5538cd325a94a49bfe3f77a93a4072ca3533eaaafd11cb815bf601e7216d6574",
+    "lines": 2906
+  },
+  "readme.md": {
+    "sha256": "6259327d2f35551041ed047f5c0ad64a205a87f9a9de6c33f45a99acd658aeda",
+    "lines": 58
+  },
+  "google-sheets/Code.gs": {
+    "sha256": "7b586fec77ad95f871fdb77875d0677d86e10727b7bba2178e2eef217ec299fe",
+    "lines": 505
+  },
+  "google-sheets/README.md": {
+    "sha256": "8957f8f3344a73a0a5f91ba31dca25cd3dfc6d2d45b995ae02539e66e5a1512f",
+    "lines": 27
+  },
+  "service-worker.js": {
+    "sha256": "2539993b73efb63fc1d1d0f0e4f6ff614d39de0ab3f34265d014e8edf6908fda",
+    "lines": 59
+  },
+  "manifest.webmanifest": {
+    "sha256": "8edd0cf2a7544a08b13187bb226c20a0a1bc862498a417f9fc1c799c7271833c",
+    "lines": 27
+  }
+}

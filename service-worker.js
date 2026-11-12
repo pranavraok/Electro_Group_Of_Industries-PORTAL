@@ -1,4 +1,4 @@
-const CACHE_NAME = "electro-ops-shell-v1";
+const CACHE_NAME = "electro-ops-shell-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,6 +7,9 @@ const APP_SHELL = [
   "./manifest.webmanifest",
   "./assets/electro-group-logo.png",
   "./assets/electrotech-services-logo.png",
+  "./assets/electrotech-services-offer.png",
+  "./assets/electroheat-systems-offer.png",
+  "./assets/solartech-industries-offer.png",
   "./assets/app-icon-192.png",
   "./assets/app-icon-512.png"
 ];

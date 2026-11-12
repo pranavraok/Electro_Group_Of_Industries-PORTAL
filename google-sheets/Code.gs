@@ -27,7 +27,7 @@ const APPOINTMENT_HEADERS = [
   "joining_date", "status", "payload_json", "confirmed_at", "updated_at"
 ];
 const SPREADSHEET_ID = "1fuzplqthrPBaIbyuaGIOg_n1Z8XnSSdimjJjArl76So";
-const ADMIN_PASSWORD = "CHANGE_THIS_TO_YOUR_PASSWORD";
+const ADMIN_PASSWORD = "electro123@";
 
 function doGet(event) {
   try {

@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="assets/electro-group-logo.png">
   <link rel="apple-touch-icon" sizes="192x192" href="assets/app-icon-192.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261112-offer-logo-originals">
 </head>
 
 <body>
@@ -241,15 +241,15 @@
                   <div class="form-field"><label>Device</label><input data-report-field="device"
                       value="Digital Temperature Controller"></div>
                   <div class="form-field"><label>Make</label><input data-report-field="make"
-                      value="ELECTROTECH SERVICES"></div>
+                      value="ELECTROTECH SERVICES" placeholder="Leave blank to hide from report"></div>
                   <div class="form-field"><label>Serial no.</label><input data-report-field="serialNo"
-                      placeholder="31GRK317"></div>
+                      placeholder="Leave blank to hide from report"></div>
                   <div class="form-field"><label>Equipment</label><input data-report-field="equipment"
-                      placeholder="Hot Chamber 1"></div>
+                      placeholder="Leave blank to hide from report"></div>
                   <div class="form-field"><label>Location</label><input data-report-field="location"
-                      placeholder="Boiler Area"></div>
+                      placeholder="Leave blank to hide from report"></div>
                   <div class="form-field"><label>Environment condition</label><input data-report-field="environment"
-                      placeholder="Normal"></div>
+                      placeholder="Leave blank to hide from report"></div>
                   <div class="form-field"><label>Room temperature (°C)</label><input data-report-field="roomTemp"
                       type="number" value="29"></div>
                   <div class="form-field"><label>Humidity</label><input data-report-field="humidity" value="55% to 85%">
@@ -265,6 +265,7 @@
                 </div>
                 <div class="reading-meta-grid">
                   <div class="form-field"><label>Sensor / parameter</label><select data-report-field="parameter">
+                      <option value="">Leave blank to hide from report</option>
                       <option value="Sensor: PT-100" selected>PT-100</option>
                       <option value="Sensor: RTD">RTD</option>
                       <option value="Sensor: J Type">J Type</option>
@@ -327,7 +328,7 @@
               </div>
             </form>
             <aside class="preview-panel">
-              <div class="preview-label"><span>LIVE TEMPLATE</span><small>Fixed border and layout</small></div>
+              <div class="preview-label"><span>LIVE TEMPLATE</span><small>Blank fields are hidden</small></div>
               <div id="calibrationPreview" class="calibration-sheet"></div>
             </aside>
           </div>
@@ -430,7 +431,6 @@
                         <th>Reference</th>
                         <th>Observed</th>
                         <th>Error</th>
-                        <th>Result</th>
                         <th>Action</th>
                       </tr>
                     </thead>
@@ -541,13 +541,19 @@
                   </div>
                 </div>
                 <div class="report-field-grid two">
+                  <div class="form-field form-field--full"><label>Company for this offer</label><select
+                      data-offer-field="companyKey" id="offerCompanySelector">
+                      <option value="electrotech">Electrotech Services</option>
+                      <option value="electroheat">Electroheat Systems</option>
+                      <option value="solartech">Solartech Industries</option>
+                    </select></div>
                   <div class="form-field"><label>Company name</label><input data-offer-field="companyName"
-                      value="Electrotech Services"></div>
+                      value="Electrotech Services" readonly></div>
                   <div class="form-field"><label>Work location</label><input data-offer-field="workLocation"
                       value="Baikampady"></div>
                   <div class="form-field form-field--full"><label>Office address</label><input
                       data-offer-field="officeAddress"
-                      value="Adjacent to Sm. 180, Industrial Area, Mangaluru, Baikampady, Mangalore-575011, Karnataka">
+                      value="Adjacent to Sm. 180, Industrial Area, Mangaluru, Baikampady, Mangalore-575011, Karnataka" readonly>
                   </div>
                   <div class="form-field"><label>Probation period (months)</label><input
                       data-offer-field="probationMonths" type="number" min="0" value="6"></div>
@@ -577,7 +583,7 @@ ESI Registration Number</textarea></div>
                   </div>
                   <div class="form-field form-field--full"><label>Closing message</label><textarea
                       data-offer-field="welcomeText"
-                      rows="2">We look forward to welcoming you to Electrotech Services.</textarea></div>
+                      rows="2">We look forward to welcoming you to our team.</textarea></div>
                 </div>
               </div>
             </form>
@@ -740,6 +746,10 @@ ESI Registration Number</textarea></div>
           <div class="material-bar">
             <h3 id="dbTitle">Edit database</h3><button class="back-btn" onclick="backToLanding()">Back</button>
           </div>
+          <div class="database-actions">
+            <p id="dbEditorHelp">Add a row, fill in its SWG and wire values, then save to the selected material database.</p>
+            <button class="ghost-btn" type="button" onclick="addWireRow()">Add row</button>
+          </div>
           <div class="table-wrapper">
             <table id="dbTable"></table>
           </div><button id="saveBtn" class="primary-action table-save" onclick="saveDatabase()">Save changes</button>
@@ -772,7 +782,7 @@ ESI Registration Number</textarea></div>
         it</button>
     </div>
   </div>
-  <script src="script.js"></script>
+  <script src="script.js?v=20261112-offer-logo-originals"></script>
 </body>
 
 </html>

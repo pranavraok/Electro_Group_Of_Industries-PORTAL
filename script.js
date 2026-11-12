@@ -653,7 +653,7 @@ function evaluatePrimarySWGSelection({ W, V, extra, coreLength, pipeID, insulati
     let pass = false;
     if (w.swg >= 22 && w.swg <= 32) {
       pass = pitch >= idealPitch * 0.98;
-    } else if (w.swg >= 33 && w.swg <= 45) {
+    } else if (w.swg >= 33) {
       pass = pitch >= idealPitch;
     }
 
@@ -1216,7 +1216,7 @@ function calculate() {
 
     if (w.swg >= 22 && w.swg <= 32) {
       pass = pitch >= idealPitch * 0.98;
-    } else if (w.swg >= 33 && w.swg <= 45) {
+    } else if (w.swg >= 33) {
       pass = pitch >= idealPitch;
     }
 
@@ -1430,15 +1430,38 @@ function populateDBTable() {
     input.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.idx);
       const field = e.target.dataset.field;
-      const value = parseFloat(e.target.value) || 0;
+      const value = e.target.value === "" ? "" : Number(e.target.value);
       wireData[idx][field] = value;
     });
   });
 }
 
+function addWireRow() {
+  let nextId = wireData.reduce((maxId, wire) => Math.max(maxId, Number(wire.id) || 0), 0) + 1;
+  const newRowIndex = wireData.length;
+  wireData.push({
+    id: nextId,
+    swg: "",
+    thickness: "",
+    ohm: "",
+    minw: "",
+    maxw: ""
+  });
+
+  populateDBTable();
+  document.getElementById("dbEditorHelp").textContent =
+    "Fill in the SWG, thickness, ohm per metre, and min/max wattage for the new row, then save to the Google Sheet.";
+  document.querySelector(`#dbTable input[data-idx="${newRowIndex}"][data-field="swg"]`)?.focus();
+}
+
 async function saveDatabase() {
   const saveBtn = document.getElementById("saveBtn");
-  const invalidRow = wireData.find((wire) =>
+  const invalidRowIndex = wireData.findIndex((wire) =>
+    wire.swg === "" ||
+    wire.thickness === "" ||
+    wire.ohm === "" ||
+    wire.minw === "" ||
+    wire.maxw === "" ||
     !Number.isFinite(Number(wire.swg)) ||
     !Number.isFinite(Number(wire.thickness)) ||
     !Number.isFinite(Number(wire.ohm)) ||
@@ -1451,8 +1474,11 @@ async function saveDatabase() {
     Number(wire.maxw) < Number(wire.minw)
   );
 
-  if (invalidRow) {
-    showSaveModal("Check Values", "Fix database values before saving.");
+  if (invalidRowIndex !== -1) {
+    showSaveModal(
+      "Check Values",
+      `Complete all valid values for row ${invalidRowIndex + 1} (SWG, thickness, ohm per metre, and min/max wattage) before saving.`
+    );
     return;
   }
 
@@ -1558,7 +1584,7 @@ function extractReportSequence(reportNumber) {
 
 function syncPageNumberFromReportNumber() {
   const sequence = extractReportSequenceText(reportField("reportNo")?.value);
-  if (sequence) reportField("pageNo").value = sequence;
+  reportField("pageNo").value = sequence;
 }
 
 function normalizeCustomerName(name) {
@@ -1751,7 +1777,8 @@ function renumberReadingRows() {
 }
 
 function getReadingRows() {
-  const tolerance = Math.abs(Number(reportField("claimedError")?.value) || 0);
+  const toleranceValue = reportField("claimedError")?.value || "";
+  const tolerance = Math.abs(Number(toleranceValue) || 0);
   return Array.from(document.querySelectorAll("#readingsBody tr")).map((row, index) => {
     const standardValue = row.querySelector('[data-reading-field="standard"]').value;
     const ducValue = row.querySelector('[data-reading-field="duc"]').value;
@@ -1764,10 +1791,11 @@ function getReadingRows() {
     const errorOutput = row.querySelector('[data-reading-output="error"]');
     const remarkOutput = row.querySelector('[data-reading-output="remark"]');
     errorOutput.textContent = complete ? Number(error.toFixed(2)).toString() : "-";
-    remarkOutput.textContent = complete ? (pass ? "Pass" : "Fail") : "-";
-    remarkOutput.classList.toggle("pass", pass);
-    remarkOutput.classList.toggle("fail", complete && !pass);
-    return { index: index + 1, standard: complete ? standard : "", duc: complete ? duc : "", error: complete ? Number(error.toFixed(2)) : "", remark: complete ? (pass ? "Pass" : "Fail") : "" };
+    const hasRemark = complete && toleranceValue !== "";
+    remarkOutput.textContent = hasRemark ? (pass ? "Pass" : "Fail") : "-";
+    remarkOutput.classList.toggle("pass", hasRemark && pass);
+    remarkOutput.classList.toggle("fail", hasRemark && !pass);
+    return { index: index + 1, standard: standardValue !== "" ? standard : "", duc: ducValue !== "" ? duc : "", error: complete ? Number(error.toFixed(2)) : "", remark: hasRemark ? (pass ? "Pass" : "Fail") : "" };
   });
 }
 
@@ -1803,22 +1831,70 @@ function renderCalibrationPreview() {
   const preview = document.getElementById("calibrationPreview");
   if (!preview) return;
   const data = collectReportData();
-  const address = escapeHtml(data.customerAddress || "Customer address").replaceAll("\n", "<br>");
-  const readings = data.readings.length ? data.readings : [{ index: 1, standard: "", duc: "", error: "", remark: "" }];
+  const hasValue = (value) => value !== null && value !== undefined && String(value).trim() !== "";
+  const text = (value) => hasValue(value) ? escapeHtml(value) : "";
+  const detail = (label, value, format = text) => hasValue(value) ? `<span><b>${label}:</b> ${format(value)}</span>` : "";
+  const line = (items) => {
+    const filled = items.filter(Boolean);
+    return filled.length ? `<div class="line" style="--certificate-columns: ${filled.length}">${filled.join("")}</div>` : "";
+  };
+  const customerDetails = [data.customerName, data.customerAddress].filter(hasValue)
+    .map((value) => text(value).replaceAll("\n", "<br>")).join("<br>");
+  const customerLabel = hasValue(data.customerName) && hasValue(data.customerAddress)
+    ? "CUSTOMER'S NAME &amp; ADDRESS"
+    : (hasValue(data.customerName) ? "CUSTOMER'S NAME" : "CUSTOMER'S ADDRESS");
+  const controls = [
+    ["CAL. REPORT NO.", data.reportNo], ["CAL. ON", data.calOn, formatReportDate],
+    ["CAL. DUE", data.calDue, formatReportDate], ["PAGE NO.", data.pageNo]
+  ].filter(([, value]) => hasValue(value));
+  const equipmentLines = [
+    line([detail("Device", data.device), detail("Make", data.make), detail("Sl No", data.serialNo)]),
+    line([detail("Equipment", data.equipment), detail("Location", data.location)]),
+    line([
+      detail("Environment Condition", data.environment),
+      detail("Room Temp.", data.roomTemp, (value) => `± ${text(value)}°C`),
+      detail("Humidity", data.humidity)
+    ])
+  ].filter(Boolean).join("");
+  const readings = data.readings.filter((reading) => hasValue(reading.standard) || hasValue(reading.duc));
+  const parameter = [text(data.parameter), hasValue(data.range) ? `(${text(data.range)})` : ""].filter(Boolean).join("<br>");
+  const columns = [
+    { heading: "Sl.<br>No", show: readings.length > 0, cell: (_reading, index) => `${index + 1}.` },
+    { heading: "Parameter / Range<br>Temp/Ambt.", show: Boolean(parameter), cell: (_reading, index) => index === 0 ? parameter : "" },
+    { heading: "STD<br>Input", show: readings.some((reading) => hasValue(reading.standard)), cell: (reading) => hasValue(reading.standard) ? `${text(reading.standard)}°C` : "" },
+    { heading: "DUC<br>Reading", show: readings.some((reading) => hasValue(reading.duc)), cell: (reading) => hasValue(reading.duc) ? `${text(reading.duc)}°C` : "" },
+    { heading: "DUC error<br>claimed", show: hasValue(data.claimedError), cell: () => `±${text(data.claimedError)}%` },
+    { heading: "DUC error<br>observed", show: readings.some((reading) => hasValue(reading.error)), cell: (reading) => text(reading.error) },
+    { heading: "Remarks", show: readings.some((reading) => hasValue(reading.remark)), cell: (reading) => text(reading.remark) }
+  ].filter((column) => column.show);
+  const readingRows = readings.length ? readings : [{}];
+  const standardMakeAndSerial = [
+    hasValue(data.standardMake) ? `Make: ${text(data.standardMake)}` : "",
+    hasValue(data.standardSerial) ? `SL.NO: ${text(data.standardSerial)}` : ""
+  ].filter(Boolean).join(" &nbsp;&nbsp; ");
+  const standardDetails = [
+    text(data.standardName), standardMakeAndSerial,
+    hasValue(data.standardReportNo) ? `Report No. ${text(data.standardReportNo)}` : "",
+    hasValue(data.standardValidity) ? `Cal. Validity: ${text(formatReportDate(data.standardValidity))}` : ""
+  ].filter(Boolean);
+  const notes = [["TRACEABLE TO", data.traceableTo], ["METHOD", data.method], ["CONDITION", data.condition]]
+    .filter(([, value]) => hasValue(value))
+    .map(([label, value]) => `<div class="certificate-note"><b>${label}</b><span>:</span><span>${text(value).replaceAll("\n", "<br>")}</span></div>`).join("");
+  const signatures = [
+    ["CALIBRATED BY", data.calibratedBy, "(Calibration Engineer)"],
+    ["CHECKED BY", data.checkedBy, "(Sr. Calibration Engineer)"],
+    ["For ELECTROTECH SERVICES", data.authorisedBy, ""]
+  ].filter(([, value]) => hasValue(value));
   preview.innerHTML = `
     <div class="certificate-letterhead-space" aria-hidden="true"></div>
     <div class="certificate-title">CALIBRATION REPORT</div>
-    <div class="certificate-customer"><strong>CUSTOMER'S NAME &amp; ADDRESS</strong><div class="certificate-address">${escapeHtml(data.customerName || "M/s. Customer name")}<br>${address}</div></div>
-    <table class="certificate-control"><thead><tr><th>CAL. REPORT NO.</th><th>CAL. ON</th><th>CAL. DUE</th><th>PAGE NO.</th></tr></thead><tbody><tr><td>${escapeHtml(data.reportNo)}</td><td>${formatReportDate(data.calOn)}</td><td>${formatReportDate(data.calDue)}</td><td>${escapeHtml(data.pageNo)}</td></tr></tbody></table>
-    <div class="certificate-equipment">
-      <div class="line"><span><b>Device:</b> ${escapeHtml(data.device || "-")}</span><span><b>Make:</b> ${escapeHtml(data.make || "-")}</span><span><b>Sl No:</b> ${escapeHtml(data.serialNo || "-")}</span></div>
-      <div class="line"><span><b>Equipment:</b> ${escapeHtml(data.equipment || "-")}</span><span><b>Location:</b> ${escapeHtml(data.location || "-")}</span><span></span></div>
-      <div class="line"><span><b>Environment Condition:</b> ${escapeHtml(data.environment || "-")}</span><span><b>Room Temp.:</b> ± ${escapeHtml(data.roomTemp || "-")}°C</span><span><b>Humidity:</b> ${escapeHtml(data.humidity || "-")}</span></div>
-    </div>
-    <table class="certificate-readings"><thead><tr><th>Sl.<br>No</th><th>Parameter / Range<br>Temp/Ambt.</th><th>STD<br>Input</th><th>DUC<br>Reading</th><th>DUC error<br>claimed</th><th>DUC error<br>observed</th><th>Remarks</th></tr></thead><tbody>${readings.map((reading, index) => `<tr><td>${reading.index}.</td><td>${index === 0 ? `${escapeHtml(data.parameter || "-")}<br>(${escapeHtml(data.range || "-")})` : ""}</td><td>${reading.standard === "" ? "-" : escapeHtml(reading.standard) + "°C"}</td><td>${reading.duc === "" ? "-" : escapeHtml(reading.duc) + "°C"}</td><td>±${escapeHtml(data.claimedError || "0")}%</td><td>${reading.error === "" ? "-" : escapeHtml(reading.error)}</td><td>${escapeHtml(reading.remark || "-")}</td></tr>`).join("")}</tbody></table>
-    <div class="certificate-standard"><strong>PRIMARY STANDARD USED :</strong><div class="standard-details"><span>${escapeHtml(data.standardName || "-")}</span><span>Make: ${escapeHtml(data.standardMake || "-")} &nbsp;&nbsp; SL.NO: ${escapeHtml(data.standardSerial || "-")}</span><span>Report No. ${escapeHtml(data.standardReportNo || "-")}</span><span>Cal. Validity: ${formatReportDate(data.standardValidity)}</span></div></div>
-    <div class="certificate-notes"><div class="certificate-note"><b>TRACEABLE TO</b><span>:</span><span>${escapeHtml(data.traceableTo || "-")}</span></div><div class="certificate-note"><b>METHOD</b><span>:</span><span>${escapeHtml(data.method || "-")}</span></div><div class="certificate-note"><b>CONDITION</b><span>:</span><span>${escapeHtml(data.condition || "-")}</span></div></div>
-    <div class="certificate-signatures"><div class="signature-block"><strong>CALIBRATED BY</strong><div><div class="signature-name">${escapeHtml(data.calibratedBy || "-")}</div><div class="signature-role">(Calibration Engineer)</div></div></div><div class="signature-block"><strong>CHECKED BY</strong><div><div class="signature-name">${escapeHtml(data.checkedBy || "-")}</div><div class="signature-role">(Sr. Calibration Engineer)</div></div></div><div class="signature-block"><strong>For ELECTROTECH SERVICES</strong><div><div class="signature-name">[${escapeHtml(data.authorisedBy || "-")}]</div></div></div></div>`;
+    ${customerDetails ? `<div class="certificate-customer"><strong>${customerLabel}</strong><div class="certificate-address">${customerDetails}</div></div>` : ""}
+    ${controls.length ? `<table class="certificate-control"><thead><tr>${controls.map(([label]) => `<th>${label}</th>`).join("")}</tr></thead><tbody><tr>${controls.map(([, value, format]) => `<td>${text(format ? format(value) : value)}</td>`).join("")}</tr></tbody></table>` : ""}
+    ${equipmentLines ? `<div class="certificate-equipment">${equipmentLines}</div>` : ""}
+    ${columns.length ? `<table class="certificate-readings certificate-readings--conditional"><thead><tr>${columns.map((column) => `<th>${column.heading}</th>`).join("")}</tr></thead><tbody>${readingRows.map((reading, index) => `<tr>${columns.map((column) => `<td>${column.cell(reading, index)}</td>`).join("")}</tr>`).join("")}</tbody></table>` : ""}
+    ${standardDetails.length ? `<div class="certificate-standard"><strong>PRIMARY STANDARD USED :</strong><div class="standard-details">${standardDetails.map((value) => `<span>${value}</span>`).join("")}</div></div>` : ""}
+    ${notes ? `<div class="certificate-notes">${notes}</div>` : ""}
+    ${signatures.length ? `<div class="certificate-signatures" style="--signature-columns: ${signatures.length}">${signatures.map(([label, value, role]) => `<div class="signature-block"><strong>${label}</strong><div><div class="signature-name">${role ? text(value) : `[${text(value)}]`}</div>${role ? `<div class="signature-role">${role}</div>` : ""}</div></div>`).join("")}</div>` : ""}`;
 }
 
 function resetReportForm() {
@@ -1945,7 +2021,7 @@ function setupCalibrationAutomation() {
   ensureReportDefaults();
   const form = document.getElementById("calibrationForm");
   form.addEventListener("input", (event) => {
-    if (event.target === reportField("calOn")) reportField("calDue").value = calculateDueDate(event.target.value);
+    if (event.target === reportField("calOn")) reportField("calDue").value = event.target.value ? calculateDueDate(event.target.value) : "";
     if (event.target === reportField("reportNo")) {
       rememberReportSequence(event.target.value);
       syncPageNumberFromReportNumber();
@@ -2066,7 +2142,6 @@ function addPerformanceReadingRow(reading = {}, shouldRender = true) {
     <td><input type="number" step="0.01" data-performance-reading="reference" value="${escapeHtml(reading.reference ?? "")}"></td>
     <td><input type="number" step="0.01" data-performance-reading="observed" value="${escapeHtml(reading.observed ?? "")}"></td>
     <td class="calculated-value" data-performance-output="error">-</td>
-    <td class="calculated-value" data-performance-output="remark">-</td>
     <td><button type="button" class="remove-reading" aria-label="Delete performance reading" onclick="removePerformanceReadingRow(this)">Delete</button></td>`;
   body.appendChild(row);
   renumberPerformanceReadingRows();
@@ -2105,11 +2180,7 @@ function calculatePerformanceReadings() {
     const roundedError = error === null ? "" : Number(error.toFixed(2));
     const pass = error !== null && Math.abs(error) <= accuracy + 0.000001;
     const errorOutput = row.querySelector('[data-performance-output="error"]');
-    const remarkOutput = row.querySelector('[data-performance-output="remark"]');
     errorOutput.textContent = error === null ? "-" : `${roundedError}${unit}`;
-    remarkOutput.textContent = error === null ? "-" : (pass ? "Pass" : "Fail");
-    remarkOutput.classList.toggle("pass", pass);
-    remarkOutput.classList.toggle("fail", error !== null && !pass);
     return { index: index + 1, reference: complete ? reference : "", observed: complete ? observed : "", error: roundedError, remark: error === null ? "" : (pass ? "Pass" : "Fail") };
   });
 }
@@ -2149,11 +2220,15 @@ function renderPerformancePreview() {
     <table class="certificate-control"><thead><tr><th>REPORT NO.</th><th>CAL. ON</th><th>CAL. DUE</th><th>PAGE NO.</th></tr></thead><tbody><tr><td>${escapeHtml(data.reportNo || "-")}</td><td>${formatReportDate(data.calOn)}</td><td>${formatReportDate(data.calDue)}</td><td>${escapeHtml(data.pageNo || "-")}</td></tr></tbody></table>
     <div class="performance-link"><b>Linked Calibration Report:</b> ${escapeHtml(data.linkedCalibrationNo || "-")}</div>
     <div class="performance-equipment"><div><b>Instrument Tested:</b> ${escapeHtml(data.instrumentTested || "-")}</div><div><b>Sl. No:</b> ${escapeHtml(data.serialNo || "-")}</div>${data.make ? `<div><b>Make:</b> ${escapeHtml(data.make)}</div>` : ""}${data.device ? `<div><b>Device:</b> ${escapeHtml(data.device)}</div>` : ""}${data.model ? `<div><b>Model:</b> ${escapeHtml(data.model)}</div>` : ""}<div><b>Environment Condition:</b> ${escapeHtml(data.roomTemp || "-")} &nbsp;&nbsp; ${escapeHtml(data.humidity || "-")}</div><div><b>Instrument Range:</b> ${escapeHtml(data.instrumentRange || "-")}</div><div><b>Accuracy:</b> ±${escapeHtml(data.accuracy || "0")}${escapeHtml(unit)}</div></div>
-    <div class="performance-table-wrap"><table class="performance-readings"><tbody><tr><th>Reference (°C)</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.reference)}</td>`).join("")}</tr><tr><th>Observed (°C)</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.observed)}</td>`).join("")}</tr><tr><th>Error (${escapeHtml(unit)})</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.error)}</td>`).join("")}</tr><tr><th>Result</th>${readings.map((reading) => `<td class="${reading.remark === "Pass" ? "performance-pass" : (reading.remark === "Fail" ? "performance-fail" : "performance-pending")}">${escapeHtml(reading.remark || "-")}</td>`).join("")}</tr></tbody></table></div>
-      <div class="performance-overall ${data.status === "Pass" ? "performance-pass" : (data.status === "Fail" ? "performance-fail" : "performance-pending")}">Overall result: ${escapeHtml(data.status)}</div>
+    <div class="performance-table-wrap"><table class="performance-readings"><tbody><tr><th>Reference (°C)</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.reference)}</td>`).join("")}</tr><tr><th>Observed (°C)</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.observed)}</td>`).join("")}</tr><tr><th>Error (${escapeHtml(unit)})</th>${readings.map((reading) => `<td>${performanceReadingCell(reading.error)}</td>`).join("")}</tr></tbody></table></div>
     <div class="certificate-standard"><strong>PRIMARY STANDARD USED :</strong><div class="standard-details"><span>${escapeHtml(data.standardName || "-")}</span><span>Make: ${escapeHtml(data.standardMake || "-")} &nbsp;&nbsp; SL.NO: ${escapeHtml(data.standardSerial || "-")}</span><span>Report No. ${escapeHtml(data.standardReportNo || "-")}</span><span>Cal. Validity: ${formatReportDate(data.standardValidity)}</span></div></div>
-    <div class="certificate-notes"><div class="certificate-note"><b>TRACEABLE TO</b><span>:</span><span>${escapeHtml(data.traceableTo || "-")}</span></div><div class="certificate-note"><b>METHOD</b><span>:</span><span>${escapeHtml(data.method || "-")}</span></div><div class="certificate-note"><b>CONDITION</b><span>:</span><span>${escapeHtml(data.condition || "-")}</span></div></div>
-    <div class="certificate-signatures"><div class="signature-block"><strong>CALIBRATED BY</strong><div><div class="signature-name">${escapeHtml(data.calibratedBy || "-")}</div><div class="signature-role">(Calibration Engineer)</div></div></div><div class="signature-block"><strong>CHECKED BY</strong><div><div class="signature-name">${escapeHtml(data.checkedBy || "-")}</div><div class="signature-role">(Sr. Calibration Engineer)</div></div></div><div class="signature-block"><strong>For ELECTROTECH SERVICES</strong><div><div class="signature-name">[${escapeHtml(data.authorisedBy || "-")}]</div></div></div></div>`;
+    <div class="certificate-notes performance-notes">
+      <div class="certificate-note"><b>TRACEABLE TO</b><span>:</span><span>${escapeHtml(data.traceableTo || "-")}</span></div>
+      <div class="certificate-note"><b>METHOD</b><span>:</span><span>${escapeHtml(data.method || "-")}</span></div>
+      <div class="certificate-note"><b>CONDITION</b><span>:</span><span>${escapeHtml(data.condition || "-")}</span></div>
+      <div class="certificate-note performance-calibrated-by"><strong>CALIBRATED BY</strong><span>:</span><span>${escapeHtml(data.calibratedBy || "-")} <span class="signature-role">(Calibration Engineer)</span></span></div>
+    </div>
+    <div class="certificate-signatures performance-signatures"><div class="signature-block"><strong>CHECKED BY</strong><div><div class="signature-name">${escapeHtml(data.checkedBy || "-")}</div><div class="signature-role">(Sr. Calibration Engineer)</div></div></div><div class="signature-block"><strong>For ELECTROTECH SERVICES</strong><div><div class="signature-name">[${escapeHtml(data.authorisedBy || "-")}]</div></div></div></div>`;
 }
 
 function resetPerformanceReportForm() {
@@ -2320,6 +2395,36 @@ function offerField(name) {
   return document.querySelector(`[data-offer-field="${name}"]`);
 }
 
+const OFFER_COMPANIES = {
+  electrotech: {
+    name: "Electrotech Services",
+    location: "Baikampady",
+    address: "Adjacent to Sm. 180, Industrial Area, Mangaluru, Baikampady, Mangalore-575011, Karnataka",
+    logo: "assets/electrotech-services-offer.png"
+  },
+  electroheat: {
+    name: "Electroheat Systems",
+    location: "Baikampady",
+    address: "D-123, Industrial Estate, Baikampady, Mangalore, Karnataka, India - 575011",
+    logo: "assets/electroheat-systems-offer.png"
+  },
+  solartech: {
+    name: "Solartech Industries",
+    location: "Baikampady Industrial Area",
+    address: "XR38+CRJ, New Mangalore, Industrial Area, Baikampady Industrial Area, Mangaluru, Karnataka 575011, India",
+    logo: "assets/solartech-industries-offer.png"
+  }
+};
+
+function selectOfferCompany(companyKey) {
+  const company = OFFER_COMPANIES[companyKey] || OFFER_COMPANIES.electrotech;
+  offerField("companyKey").value = companyKey in OFFER_COMPANIES ? companyKey : "electrotech";
+  offerField("companyName").value = company.name;
+  offerField("workLocation").value = company.location;
+  offerField("officeAddress").value = company.address;
+  renderOfferPreview();
+}
+
 function loadLocalOffers() {
   try {
     const saved = JSON.parse(localStorage.getItem(OFFER_STORAGE_KEY) || "[]");
@@ -2416,6 +2521,11 @@ function setOfferFormData(offer) {
     const value = offer[field.dataset.offerField];
     if (value !== undefined) field.value = Array.isArray(value) ? value.join("\n") : value;
   });
+  if (!offer.companyKey) {
+    const legacyName = String(offer.companyName || "").toLowerCase();
+    const inferredKey = legacyName.includes("solartech") ? "solartech" : legacyName.includes("electroheat") ? "electroheat" : "electrotech";
+    offerField("companyKey").value = inferredKey;
+  }
   document.getElementById("offerFormTitle").textContent = `Edit ${offer.offerNo}`;
   renderOfferPreview();
 }
@@ -2443,6 +2553,7 @@ function renderOfferPreview() {
   const preview = document.getElementById("offerPreview");
   if (!preview) return;
   const data = collectOfferData();
+  const company = OFFER_COMPANIES[data.companyKey] || OFFER_COMPANIES.electrotech;
   const documents = data.documents.length ? data.documents : ["Required documents"];
   const months = Number(data.probationMonths || 0);
   const probationText = months > 0
@@ -2450,7 +2561,7 @@ function renderOfferPreview() {
     : "";
   preview.innerHTML = `
     <div class="offer-top-rule"></div>
-    <div class="offer-letterhead"><img src="assets/electrotech-services-logo.png" alt="Electrotech Services"><div>${escapeHtml(data.officeAddress || "Office address")}</div></div>
+    <div class="offer-letterhead"><img src="${company.logo}" alt="${escapeHtml(company.name)} logo"><div>${escapeHtml(data.officeAddress || company.address)}</div></div>
     <div class="offer-title">OFFER LETTER</div>
     <div class="offer-date"><span>Date:</span><strong>${formatOfferDate(data.offerDate)}</strong></div>
     <p>Dear <strong>${escapeHtml((data.candidateName || "Candidate name").toUpperCase())},</strong></p>
@@ -2463,7 +2574,8 @@ function renderOfferPreview() {
     <h3 class="offer-section-title">PROBATION &amp; BENEFITS</h3>
     <p>${probationText}${escapeHtml(data.benefitsText || "")}</p>
     <p>${escapeHtml(data.welcomeText || "")}</p>
-    <div class="offer-signature"><strong>For ${escapeHtml((data.companyName || "ELECTROTECH SERVICES").toUpperCase())}</strong><span>Authorised Name: <b>${escapeHtml((data.authorisedName || "-").toUpperCase())}</b></span></div>
+    <div class="offer-signature"><strong>For ${escapeHtml((data.companyName || company.name).toUpperCase())}</strong><span>Authorised Name: <b>${escapeHtml((data.authorisedName || "-").toUpperCase())}</b></span></div>
+    <footer class="offer-footer"><img src="${company.logo}" alt=""><span><b>${escapeHtml(data.companyName || company.name)}</b><br>${escapeHtml(data.officeAddress || company.address)}</span></footer>
     <div class="offer-bottom-rule"></div>`;
 }
 
@@ -2553,6 +2665,7 @@ function setupOfferAutomation() {
   loadLocalOffers();
   ensureOfferDefaults();
   document.getElementById("offerForm").addEventListener("input", renderOfferPreview);
+  offerField("companyKey").addEventListener("change", (event) => selectOfferCompany(event.target.value));
   document.getElementById("offerRecordsSearch").addEventListener("input", renderOfferRecords);
   window.addEventListener("afterprint", () => document.body.classList.remove("print-calibration", "print-performance", "print-offer", "print-appointment"));
   renderOfferPreview();

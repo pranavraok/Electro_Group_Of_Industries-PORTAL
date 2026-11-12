@@ -1,0 +1,271 @@
+{
+  "pages": 53,
+  "characters": 100308,
+  "text_by_page": [
+    {
+      "page": 1,
+      "characters": 1080,
+      "first_line": "1"
+    },
+    {
+      "page": 2,
+      "characters": 1603,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 3,
+      "characters": 493,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 4,
+      "characters": 2484,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 5,
+      "characters": 2470,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 6,
+      "characters": 2647,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 7,
+      "characters": 2495,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 8,
+      "characters": 2412,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 9,
+      "characters": 2830,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 10,
+      "characters": 1393,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 11,
+      "characters": 1771,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 12,
+      "characters": 1793,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 13,
+      "characters": 1839,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 14,
+      "characters": 1710,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 15,
+      "characters": 2143,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 16,
+      "characters": 1758,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 17,
+      "characters": 1775,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 18,
+      "characters": 1737,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 19,
+      "characters": 1820,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 20,
+      "characters": 1767,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 21,
+      "characters": 1715,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 22,
+      "characters": 1814,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 23,
+      "characters": 2147,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 24,
+      "characters": 1766,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 25,
+      "characters": 1782,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 26,
+      "characters": 1778,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 27,
+      "characters": 1900,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 28,
+      "characters": 2057,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 29,
+      "characters": 1854,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 30,
+      "characters": 1737,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 31,
+      "characters": 1777,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 32,
+      "characters": 1817,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 33,
+      "characters": 1980,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 34,
+      "characters": 1942,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 35,
+      "characters": 2329,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 36,
+      "characters": 2278,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 37,
+      "characters": 1893,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 38,
+      "characters": 1481,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 39,
+      "characters": 1723,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 40,
+      "characters": 1518,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 41,
+      "characters": 1596,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 42,
+      "characters": 2321,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 43,
+      "characters": 1942,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 44,
+      "characters": 2185,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 45,
+      "characters": 1884,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 46,
+      "characters": 2123,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 47,
+      "characters": 2653,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 48,
+      "characters": 2133,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 49,
+      "characters": 2293,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 50,
+      "characters": 2654,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 51,
+      "characters": 1369,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 52,
+      "characters": 1321,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    },
+    {
+      "page": 53,
+      "characters": 526,
+      "first_line": "Electro Group and Electrotech Services   |   Company case study   |   15 October 2026"
+    }
+  ]
+}
